@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Logística de Camiones</title>
+</head>
+<body>
+    <h1>Camiones Registrados</h1>
+    <ul>
+        {% for camion in camiones %}
+            <li>{{ camion.patente }} - {{ camion.chofer }} → {{ camion.destino }} ({{ camion.estado }})</li>
+        {% else %}
+            <li>No hay camiones registrados</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
