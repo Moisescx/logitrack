@@ -17,10 +17,10 @@ with app.app_context():
     # ========================
     # CREAR USUARIOS
     # ========================
-    roles = ["admin", "chofer", "despachador", "encargado"]
+    roles = ["admin", "chofer", "despachador"]
     ciudades = ["Santiago", "Temuco", "Valdivia"]
     users = []
-    for i in range(10):  # 10 usuarios
+    for i in range(10):  
         user = User(
             username=fake.user_name(),
             role=random.choice(roles),
