@@ -3,57 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <title>Panel Chofer</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-light">
+<body class="bg-gray-100 text-gray-900">
 
-<div class="container mt-5">
-  <h2 class="mb-4">🚛 Panel del Chofer</h2>
+  <div class="max-w-6xl mx-auto p-6">
+    <h2 class="text-2xl font-bold mb-6">🚛 Panel del Chofer</h2>
 
-  {% if truck %}
-    <div class="alert alert-info">
-      <strong>Camión asignado:</strong> {{ truck.plate }}
-    </div>
-  {% else %}
-    <div class="alert alert-warning">
-      No tienes un camión asignado aún.
-    </div>
-  {% endif %}
+    <!-- Info del camión -->
+    {% if truck %}
+      <div class="bg-blue-100 border border-blue-300 text-blue-800 p-4 rounded-xl mb-6 shadow">
+        <strong>Camión asignado:</strong> {{ truck.plate }}
+      </div>
+    {% else %}
+      <div class="bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded-xl mb-6 shadow">
+        No tienes un camión asignado aún.
+      </div>
+    {% endif %}
 
-  <h4>📋 Tus Rutas</h4>
-  {% if routes %}
-    <table class="table table-bordered mt-3 bg-white">
-      <thead class="table-light">
-        <tr>
-          <th>Origen</th>
-          <th>Destino</th>
-          <th>Estado</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for route in routes %}
-          <tr>
-            <td>{{ route.origin }}</td>
-            <td>{{ route.destination }}</td>
-            <td>{{ route.status }}</td>
-            <td>
+    <!-- Rutas Asignadas -->
+    <h3 class="text-xl font-semibold mb-3">📋 Tus rutas programadas</h3>
+    {% if assigned_routes %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        {% for route in assigned_routes %}
+          <div class="bg-white p-4 rounded-xl shadow flex flex-col justify-between">
+            <div>
+              <p><strong>Origen:</strong> {{ route.origin }}</p>
+              <p><strong>Destino:</strong> {{ route.destination }}</p>
+              <p><strong>Estado:</strong> 
+                {% if route.status == "pendiente" %}
+                  <span class="text-yellow-600 font-semibold">Pendiente</span>
+                {% elif route.status == "en_progreso" %}
+                  <span class="text-blue-600 font-semibold">En Progreso</span>
+                {% else %}
+                  <span class="text-green-600 font-semibold">Completada</span>
+                {% endif %}
+              </p>
+            </div>
+
+            <div class="mt-4">
               {% if route.status == "pendiente" %}
-                <a href="{{ url_for('update_route_status', route_id=route.id, status='en_progreso') }}" class="btn btn-sm btn-primary">Iniciar</a>
+                <a href="{{ url_for('update_route_status', route_id=route.id, status='en_progreso') }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Iniciar</a>
               {% elif route.status == "en_progreso" %}
-                <a href="{{ url_for('update_route_status', route_id=route.id, status='completada') }}" class="btn btn-sm btn-success">Finalizar</a>
-              {% else %}
-                <span class="badge bg-success">Completada</span>
+                <a href="{{ url_for('update_route_status', route_id=route.id, status='completada') }}" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg">Finalizar</a>
               {% endif %}
-            </td>
-          </tr>
+            </div>
+          </div>
         {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p class="text-muted">No tienes rutas asignadas.</p>
-  {% endif %}
-</div>
+      </div>
+    {% else %}
+      <p class="text-gray-500 mb-10">No tienes rutas asignadas.</p>
+    {% endif %}
+
+    <!-- Rutas Disponibles -->
+    <h3 class="text-xl font-semibold mb-3">🛣️ Rutas disponibles</h3>
+    {% if available_routes %}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for route in available_routes %}
+          <div class="bg-white p-4 rounded-xl shadow flex flex-col justify-between">
+            <div>
+              <p><strong>Origen:</strong> {{ route.origin }}</p>
+              <p><strong>Destino:</strong> {{ route.destination }}</p>
+              <p><strong>Estado:</strong> {{ route.status }}</p>
+            </div>
+            <div class="mt-4">
+              <a href="{{ url_for('accept_route', route_id=route.id) }}" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg">Aceptar Ruta</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-500">No hay rutas disponibles en este momento.</p>
+    {% endif %}
+  </div>
 
 </body>
 </html>

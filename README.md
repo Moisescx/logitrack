@@ -1,6 +1,7 @@
 Clonar el repositorio
 
 git clone https://github.com/Moisescx/logitrack.git
+
 cd https://github.com/Moisescx/logitrack.git
 
 Crear y activar el ambiente virtual

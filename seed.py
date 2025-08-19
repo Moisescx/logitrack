@@ -17,18 +17,33 @@ with app.app_context():
     # ========================
     # CREAR USUARIOS
     # ========================
-    roles = ["admin", "chofer", "despachador"]
-    ciudades = ["Santiago", "Temuco", "Valdivia"]
     users = []
-    for i in range(10):  
-        user = User(
-            username=fake.user_name(),
-            role=random.choice(roles),
-            password=generate_password_hash("1234")  # contraseña simple de prueba
+
+    # Admin fijo
+    admin = User(username="admin", role="admin", password=generate_password_hash("1234"))
+    db.session.add(admin)
+    users.append(admin)
+
+    # Despachadores (3 o 4 al azar)
+    for i in range(random.randint(3, 4)):
+        desp = User(
+            username=f"despachador{i+1}",
+            role="despachador",
+            password=generate_password_hash("1234")
         )
-        db.session.add(user)
-        users.append(user)
-    
+        db.session.add(desp)
+        users.append(desp)
+
+    # Choferes (ej: 20 choferes fake)
+    for i in range(20):  
+        chofer = User(
+            username=fake.user_name(),
+            role="chofer",
+            password=generate_password_hash("1234")
+        )
+        db.session.add(chofer)
+        users.append(chofer)
+
     db.session.commit()
 
     # ========================
@@ -36,29 +51,36 @@ with app.app_context():
     # ========================
     choferes = [u for u in users if u.role == "chofer"]
     trucks = []
-    for i in range(10):  # 10 camiones
+    for chofer in choferes:
         truck = Truck(
-            plate=fake.bothify(text='???###'),  # genera placas tipo ABC123
+            plate=fake.bothify(text='???###'),
             status=random.choice(["disponible", "en ruta"]),
-            driver_id=random.choice(choferes).id if choferes else None
+            driver_id=chofer.id
         )
         db.session.add(truck)
         trucks.append(truck)
-    
+
     db.session.commit()
 
     # ========================
     # CREAR RUTAS
     # ========================
-    for i in range(20): 
+    ciudades = [
+        "Santiago", "Valparaíso", "Concepción", "Antofagasta", "La Serena",
+        "Rancagua", "Temuco", "Puerto Montt", "Valdivia", "Arica"
+    ]
+
+    for i in range(100):  # 🚀 ahora 100 rutas
+        origin = random.choice(ciudades)
+        destination = random.choice([c for c in ciudades if c != origin])
         route = Route(
-    origin=random.choice(ciudades),
-    destination=random.choice(ciudades),
-    status=random.choice(["pendiente", "en curso", "finalizada"]),
-    truck_id=random.choice(trucks).id if trucks else None
+            origin=origin,
+            destination=destination,
+            status=random.choice(["pendiente", "en curso", "finalizada"]),
+            truck_id=random.choice(trucks).id if trucks else None
         )
         db.session.add(route)
-    
+
     db.session.commit()
 
-    print("Datos de prueba generados con Faker ✅")
+    print("✅ Datos de prueba generados: 1 admin, varios despachadores, choferes, camiones y 100 rutas")

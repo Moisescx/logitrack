@@ -23,8 +23,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"  # si alguien no logueado entra a ruta protegida → va a /login
 
-
-
 # ======== MODELOS ========
 
 class User( UserMixin,db.Model):
@@ -56,9 +54,9 @@ class Tracking(db.Model):
 if __name__ == '__main__':
     #with app.app_context():#
         #db.create_all()#
-    print("Base de datos creada.")
+    #print("Base de datos creada.")#
     
-hashed_password = generate_password_hash("contraseña123", method="pbkdf2:sha256")
+    hashed_password = generate_password_hash("contraseña123", method="pbkdf2:sha256")
 
     
 @login_manager.user_loader
@@ -101,14 +99,21 @@ def dashboard_admin():
 def dashboard_chofer():
     if current_user.role != "chofer":
         return "No autorizado", 403
-    
-    # Obtener el camión del chofer actual
+
     truck = Truck.query.filter_by(driver_id=current_user.id).first()
 
-    # Buscar rutas de ese camión
-    routes = Route.query.filter_by(truck_id=truck.id).all() if truck else []
+    # Rutas asignadas al chofer
+    assigned_routes = Route.query.filter_by(truck_id=truck.id).all() if truck else []
 
-    return render_template("dashboard_chofer.html", routes=routes, truck=truck)
+    # Rutas sin chofer asignado (camión sin chofer todavía)
+    available_routes = Route.query.join(Truck).filter(Truck.driver_id == None).all()
+
+    return render_template(
+        "dashboard_chofer.html",
+        truck=truck,
+        assigned_routes=assigned_routes,
+        available_routes=available_routes
+    )
 
 @app.route("/update_route_status/<int:route_id>/<status>")
 @login_required
@@ -125,6 +130,22 @@ def update_route_status(route_id, status):
     # Actualizar estado
     if status in ["en_progreso", "completada"]:
         route.status = status
+        db.session.commit()
+
+    return redirect(url_for("dashboard_chofer"))
+
+@app.route("/accept_route/<int:route_id>")
+@login_required
+def accept_route(route_id):
+    if current_user.role != "chofer":
+        return "No autorizado", 403
+
+    route = Route.query.get_or_404(route_id)
+
+    # Verificar que no tenga chofer
+    if route.truck.driver_id is None:
+        # Asignar el chofer actual al camión de esa ruta
+        route.truck.driver_id = current_user.id
         db.session.commit()
 
     return redirect(url_for("dashboard_chofer"))
