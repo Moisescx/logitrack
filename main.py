@@ -28,7 +28,7 @@ login_manager.login_view = "login"  # si alguien no logueado entra a ruta proteg
 class User( UserMixin,db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # chofer, despachador, etc.
+    role = db.Column(db.String(20), nullable=False)  # chofer, despachador, admin.
     password = db.Column(db.String(200), nullable=False)  # contraseña hasheada
 
 class Truck(db.Model):
@@ -36,6 +36,8 @@ class Truck(db.Model):
     plate = db.Column(db.String(20), unique=True, nullable=False)
     status = db.Column(db.String(20), nullable=False, default="disponible")
     driver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+    driver = db.relationship('User', backref='truck')
 
 class Route(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -43,6 +45,8 @@ class Route(db.Model):
     destination = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), nullable=False, default="pendiente")
     truck_id = db.Column(db.Integer, db.ForeignKey('truck.id'))
+    
+    truck = db.relationship('Truck', backref='routes')
 
 class Tracking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -123,33 +127,44 @@ def update_route_status(route_id, status):
 
     route = Route.query.get_or_404(route_id)
 
-    # Validar que la ruta corresponde al chofer actual
-    if route.truck.driver_id != current_user.id:
+# Caso 1: ruta pendiente -> chofer quiere tomarla
+    if route.status == "pendiente" and route.truck_id is None:
+        truck = Truck.query.filter_by(driver_id=current_user.id).first()
+        if not truck:
+            return "No tienes camión asignado", 400
+
+        route.truck_id = truck.id
+        route.status = "en curso"
+
+    # Caso 2: ruta ya asignada -> validar que corresponde al chofer
+    elif route.truck and route.truck.driver_id != current_user.id:
         return "No autorizado", 403
 
-    # Actualizar estado
-    if status in ["en_progreso", "completada"]:
-        route.status = status
-        db.session.commit()
-
+    db.session.commit()
     return redirect(url_for("dashboard_chofer"))
-
-@app.route("/accept_route/<int:route_id>")
+@app.route("/asignar_ruta/<int:route_id>")
 @login_required
-def accept_route(route_id):
+def asignar_ruta(route_id):
     if current_user.role != "chofer":
         return "No autorizado", 403
 
     route = Route.query.get_or_404(route_id)
 
-    # Verificar que no tenga chofer
-    if route.truck.driver_id is None:
-        # Asignar el chofer actual al camión de esa ruta
-        route.truck.driver_id = current_user.id
-        db.session.commit()
+    # Validar que la ruta esté disponible
+    if route.status != "pendiente" or route.truck_id is not None:
+        return "Ruta no disponible", 400
 
-    return redirect(url_for("dashboard_chofer"))
+    # Buscar el camión del chofer actual
+    truck = Truck.query.filter_by(driver_id=current_user.id).first()
+    if not truck:
+        return "No tienes camión asignado", 400
 
+    # Asignar ruta
+    route.truck_id = truck.id
+    route.status = "en curso"
+    db.session.commit()
+
+    return redirect(url_for("dashboard_chofer")) 
 
 @app.route("/dashboard_despachador")
 @login_required

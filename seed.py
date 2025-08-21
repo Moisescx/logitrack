@@ -19,29 +19,23 @@ with app.app_context():
     # ========================
     users = []
 
-    # Admin fijo
+    # Admin
     admin = User(username="admin", role="admin", password=generate_password_hash("1234"))
     db.session.add(admin)
     users.append(admin)
 
-    # Despachadores (3 o 4 al azar)
-    for i in range(random.randint(3, 4)):
-        desp = User(
-            username=f"despachador{i+1}",
-            role="despachador",
-            password=generate_password_hash("1234")
-        )
+    # Despachadores
+    for i in range(3):  # 3 despachadores
+        desp = User(username=f"despachador{i+1}", role="despachador", password=generate_password_hash("1234"))
         db.session.add(desp)
         users.append(desp)
 
-    # Choferes (ej: 20 choferes fake)
-    for i in range(20):  
-        chofer = User(
-            username=fake.user_name(),
-            role="chofer",
-            password=generate_password_hash("1234")
-        )
+    # Choferes
+    choferes = []
+    for i in range(10):  # 10 choferes
+        chofer = User(username=fake.user_name(), role="chofer", password=generate_password_hash("1234"))
         db.session.add(chofer)
+        choferes.append(chofer)
         users.append(chofer)
 
     db.session.commit()
@@ -49,13 +43,12 @@ with app.app_context():
     # ========================
     # CREAR CAMIONES
     # ========================
-    choferes = [u for u in users if u.role == "chofer"]
     trucks = []
     for chofer in choferes:
         truck = Truck(
             plate=fake.bothify(text='???###'),
             status=random.choice(["disponible", "en ruta"]),
-            driver_id=chofer.id
+            driver=chofer  # 🔹 usamos la relación, no el ID
         )
         db.session.add(truck)
         trucks.append(truck)
@@ -65,22 +58,20 @@ with app.app_context():
     # ========================
     # CREAR RUTAS
     # ========================
-    ciudades = [
-        "Santiago", "Valparaíso", "Concepción", "Antofagasta", "La Serena",
-        "Rancagua", "Temuco", "Puerto Montt", "Valdivia", "Arica"
-    ]
+    ciudades = ["Santiago", "Valparaíso", "Concepción", "Antofagasta", "La Serena", 
+                "Rancagua", "Temuco", "Puerto Montt", "Valdivia", "Arica"]
 
-    for i in range(100):  # 🚀 ahora 100 rutas
+    for i in range(30):  # 30 rutas
         origin = random.choice(ciudades)
         destination = random.choice([c for c in ciudades if c != origin])
         route = Route(
             origin=origin,
             destination=destination,
             status=random.choice(["pendiente", "en curso", "finalizada"]),
-            truck_id=random.choice(trucks).id if trucks else None
+            truck=random.choice(trucks)  # 🔹 usamos la relación, no el ID
         )
         db.session.add(route)
 
     db.session.commit()
 
-    print("✅ Datos de prueba generados: 1 admin, varios despachadores, choferes, camiones y 100 rutas")
+    print("✅ Datos de prueba generados correctamente")
