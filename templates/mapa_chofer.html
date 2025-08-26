@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mapa de Camiones</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+    <div id="map" style="height: 600px;"></div>
+
+    <script>
+        // Crear mapa centrado en Chile
+        var map = L.map('map').setView([-33.4489, -70.6693], 6);
+
+        // Cargar tiles (mapa base)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Traer los camiones desde Flask
+        fetch("/mapa_data")
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(c => {
+                    L.marker(c.coords)
+                        .addTo(map)
+                        .bindPopup(`<b>Camión:</b> ${c.plate}<br><b>Estado:</b> ${c.status}`);
+                });
+            });
+    </script>
+</body>
+</html>

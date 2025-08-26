@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager, UserMixin, login_user, login_required,
@@ -66,6 +66,11 @@ if __name__ == '__main__':
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+@app.route("/")
+def home():
+    return redirect(url_for("login"))
+
     
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -109,8 +114,8 @@ def dashboard_chofer():
     # Rutas asignadas al chofer
     assigned_routes = Route.query.filter_by(truck_id=truck.id).all() if truck else []
 
-    # Rutas sin chofer asignado (camión sin chofer todavía)
-    available_routes = Route.query.join(Truck).filter(Truck.driver_id == None).all()
+    # Rutas sin camión asignado y pendientes (rutas disponibles para tomar)
+    available_routes = Route.query.filter_by(truck_id=None, status="pendiente").all()
 
     return render_template(
         "dashboard_chofer.html",
@@ -127,21 +132,35 @@ def update_route_status(route_id, status):
 
     route = Route.query.get_or_404(route_id)
 
-# Caso 1: ruta pendiente -> chofer quiere tomarla
-    if route.status == "pendiente" and route.truck_id is None:
-        truck = Truck.query.filter_by(driver_id=current_user.id).first()
-        if not truck:
-            return "No tienes camión asignado", 400
 
-        route.truck_id = truck.id
-        route.status = "en curso"
+    # Manejar request para cambiar estado: 'en_progreso' o 'completada'
+    if status == "en_progreso":
+        # Chofer intenta tomar una ruta pendiente o iniciar una ruta ya asignada a su camión
+        if route.status == "pendiente" and route.truck_id is None:
+            truck = Truck.query.filter_by(driver_id=current_user.id).first()
+            if not truck:
+                return "No tienes camión asignado", 400
 
-    # Caso 2: ruta ya asignada -> validar que corresponde al chofer
-    elif route.truck and route.truck.driver_id != current_user.id:
-        return "No autorizado", 403
+            route.truck_id = truck.id
+            route.status = "en_progreso"
+        else:
+            # Si la ruta ya está asignada, validar que corresponda al chofer y permitir cambiar a en_progreso
+            if not route.truck or route.truck.driver_id != current_user.id:
+                return "No autorizado", 403
+            route.status = "en_progreso"
+
+    elif status == "completada":
+        # Solo el chofer asignado puede marcarla como completada
+        if not route.truck or route.truck.driver_id != current_user.id:
+            return "No autorizado", 403
+        route.status = "completada"
+
+    else:
+        return "Estado no soportado", 400
 
     db.session.commit()
     return redirect(url_for("dashboard_chofer"))
+
 @app.route("/asignar_ruta/<int:route_id>")
 @login_required
 def asignar_ruta(route_id):
@@ -161,7 +180,7 @@ def asignar_ruta(route_id):
 
     # Asignar ruta
     route.truck_id = truck.id
-    route.status = "en curso"
+    route.status = "en_progreso"
     db.session.commit()
 
     return redirect(url_for("dashboard_chofer")) 
@@ -172,6 +191,48 @@ def dashboard_despachador():
     if current_user.role != "despachador":
         return "No autorizado", 403
     return render_template("dashboard_despachador.html")
+
+@app.route("/mapa_data")
+@login_required
+def mapa_data():
+    camiones = []
+    rutas = Route.query.join(Truck).filter(Truck.driver_id == current_user.id).all()
+
+    ciudades_coords = {
+        "Santiago": [-33.4489, -70.6693],
+        "Valparaíso": [-33.0472, -71.6127],
+        "Concepción": [-36.8201, -73.0444],
+        "Antofagasta": [-23.6509, -70.3975],
+        "La Serena": [-29.9027, -71.2520],
+        "Rancagua": [-34.1701, -70.7447],
+        "Temuco": [-38.7397, -72.5984],
+        "Puerto Montt": [-41.4717, -72.9369],
+        "Valdivia": [-39.8196, -73.2459],
+        "Arica": [-18.4783, -70.3126]
+    }
+
+    for ruta in rutas:
+        if ruta.status in ["pendiente", "en_progreso"]:
+            ciudad = ruta.origin
+        elif ruta.status == "completada":
+            ciudad = ruta.destination
+        else:
+            continue
+
+        coords = ciudades_coords.get(ciudad)
+        if coords and ruta.truck:
+            camiones.append({
+                "plate": ruta.truck.plate,
+                "status": ruta.status,
+                "coords": coords
+            })
+
+    return jsonify(camiones)
+
+
+@app.route("/mapa")
+def mapa():
+    return render_template("mapa_chofer.html")
 
 @app.route("/logout")
 @login_required

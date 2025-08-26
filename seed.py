@@ -61,14 +61,27 @@ with app.app_context():
     ciudades = ["Santiago", "Valparaíso", "Concepción", "Antofagasta", "La Serena", 
                 "Rancagua", "Temuco", "Puerto Montt", "Valdivia", "Arica"]
 
-    for i in range(30):  # 30 rutas
+    # Crear algunas rutas asignadas y otras disponibles (sin camión)
+    for i in range(20):  # 20 rutas asignadas a camiones
         origin = random.choice(ciudades)
         destination = random.choice([c for c in ciudades if c != origin])
         route = Route(
             origin=origin,
             destination=destination,
-            status=random.choice(["pendiente", "en curso", "finalizada"]),
-            truck=random.choice(trucks)  # 🔹 usamos la relación, no el ID
+            status=random.choice(["pendiente", "en_progreso", "completada"]),
+            truck=random.choice(trucks)
+        )
+        db.session.add(route)
+
+    # Rutas disponibles (sin camión) en estado 'pendiente'
+    for i in range(10):  # 10 rutas sin camión
+        origin = random.choice(ciudades)
+        destination = random.choice([c for c in ciudades if c != origin])
+        route = Route(
+            origin=origin,
+            destination=destination,
+            status="pendiente",
+            truck=None
         )
         db.session.add(route)
 
