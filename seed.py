@@ -7,12 +7,10 @@ fake = Faker()
 
 with app.app_context():
     # ========================
-    # BORRAR DATOS EXISTENTES 
+    # RECREAR BASE DE DATOS (aplica cambios de esquema)
     # ========================
-    db.session.query(Route).delete()
-    db.session.query(Truck).delete()
-    db.session.query(User).delete()
-    db.session.commit()
+    db.drop_all()
+    db.create_all()
 
     # ========================
     # CREAR USUARIOS
@@ -24,10 +22,12 @@ with app.app_context():
     db.session.add(admin)
     users.append(admin)
 
-    # Despachadores
-    for i in range(3):  # 3 despachadores
+    # Despachadores 
+    despachadores = []
+    for i in range(4):
         desp = User(username=f"despachador{i+1}", role="despachador", password=generate_password_hash("1234"))
         db.session.add(desp)
+        despachadores.append(desp)
         users.append(desp)
 
     # Choferes
@@ -44,16 +44,23 @@ with app.app_context():
     # CREAR CAMIONES
     # ========================
     trucks = []
-    for chofer in choferes:
+    # asignar camiones a choferes y también a un despachador en ciclo
+    for idx, chofer in enumerate(choferes):
+        dispatcher = despachadores[idx % len(despachadores)]
         truck = Truck(
             plate=fake.bothify(text='???###'),
             status=random.choice(["disponible", "en ruta"]),
-            driver=chofer  # 🔹 usamos la relación, no el ID
+            cargo=random.choice(["Madera", "Juguetes", "Electrónica", "Ropa", "Alimentos"]),
+            driver=chofer,
+            dispatcher=dispatcher
         )
         db.session.add(truck)
         trucks.append(truck)
 
     db.session.commit()
+
+    # Asegurar que cada despachador controle (aprox.) 3 choferes: comunicar en console
+    # (la asignación ya se hizo al crear los trucks con dispatcher)
 
     # ========================
     # CREAR RUTAS

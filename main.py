@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
+import random
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager, UserMixin, login_user, login_required,
@@ -35,9 +36,14 @@ class Truck(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     plate = db.Column(db.String(20), unique=True, nullable=False)
     status = db.Column(db.String(20), nullable=False, default="disponible")
+    cargo = db.Column(db.String(50), nullable=True)
     driver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    dispatcher_id = db.Column(db.Integer, db.ForeignKey("user.id"))  #qué despachador lo controla
+
     
-    driver = db.relationship('User', backref='truck')
+    driver = db.relationship('User', foreign_keys=[driver_id], backref='driven_truck')
+    dispatcher = db.relationship('User', foreign_keys=[dispatcher_id], backref='dispatched_trucks')
+
 
 class Route(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -114,14 +120,10 @@ def dashboard_chofer():
     # Rutas asignadas al chofer
     assigned_routes = Route.query.filter_by(truck_id=truck.id).all() if truck else []
 
-    # Rutas sin camión asignado y pendientes (rutas disponibles para tomar)
-    available_routes = Route.query.filter_by(truck_id=None, status="pendiente").all()
-
     return render_template(
         "dashboard_chofer.html",
         truck=truck,
-        assigned_routes=assigned_routes,
-        available_routes=available_routes
+        assigned_routes=assigned_routes
     )
 
 @app.route("/update_route_status/<int:route_id>/<status>")
@@ -190,13 +192,79 @@ def asignar_ruta(route_id):
 def dashboard_despachador():
     if current_user.role != "despachador":
         return "No autorizado", 403
-    return render_template("dashboard_despachador.html")
+
+    # Camiones de su flota
+    trucks = Truck.query.filter_by(dispatcher_id=current_user.id).all()
+
+    # Rutas pendientes SOLO de sus camiones
+    available_routes = Route.query.filter(
+        (Route.truck_id == None) & (Route.status == "pendiente")
+    ).all()
+
+    # Rutas en progreso o completadas de sus camiones
+    my_routes = Route.query.join(Truck).filter(Truck.dispatcher_id == current_user.id).all()
+
+    return render_template(
+        "dashboard_despachador.html",
+        trucks=trucks,
+        available_routes=available_routes,
+        my_routes=my_routes
+    )
+
+
+@app.route('/asignar_chofer/<int:route_id>')
+@login_required
+def asignar_chofer(route_id):
+    """Muestra una página con los camiones del despachador para elegir a cuál asignar la ruta."""
+    if current_user.role != 'despachador':
+        return "No autorizado", 403
+
+    route = Route.query.get_or_404(route_id)
+    if route.status != 'pendiente' or route.truck_id is not None:
+        return "Ruta no disponible", 400
+
+    # Camiones del despachador (incluye ocupados/disponibles para mostrar carga y chofer)
+    trucks = Truck.query.filter_by(dispatcher_id=current_user.id).all()
+
+    return render_template('select_truck.html', route=route, trucks=trucks)
+
+
+@app.route('/asignar_chofer_confirm/<int:route_id>/<int:truck_id>')
+@login_required
+def asignar_chofer_confirm(route_id, truck_id):
+    """Ejecuta la asignación de una ruta a un camión seleccionado por el despachador."""
+    if current_user.role != 'despachador':
+        return "No autorizado", 403
+
+    route = Route.query.get_or_404(route_id)
+    truck = Truck.query.get_or_404(truck_id)
+
+    # Validar que el camión pertenezca al despachador
+    if truck.dispatcher_id != current_user.id:
+        return "No autorizado: camión fuera de tu flota", 403
+
+    if route.status != 'pendiente' or route.truck_id is not None:
+        return "Ruta no disponible", 400
+
+    # Asignar
+    route.truck_id = truck.id
+    route.status = 'en_progreso'
+    truck.status = 'en ruta'
+    db.session.commit()
+
+    return redirect(url_for('dashboard_despachador'))
 
 @app.route("/mapa_data")
 @login_required
 def mapa_data():
     camiones = []
-    rutas = Route.query.join(Truck).filter(Truck.driver_id == current_user.id).all()
+
+    # Obtener el camión del chofer actual
+    truck = Truck.query.filter_by(driver_id=current_user.id).first()
+    if not truck:
+        return jsonify(camiones)
+
+    rutas = Route.query.filter_by(truck_id=truck.id).all()
 
     ciudades_coords = {
         "Santiago": [-33.4489, -70.6693],
@@ -212,20 +280,32 @@ def mapa_data():
     }
 
     for ruta in rutas:
-        if ruta.status in ["pendiente", "en_progreso"]:
+        # Normalizar varios nombres de estado posibles
+        status = (ruta.status or '').lower()
+        if status in ["pendiente", "en_progreso", "en curso", "en ruta"]:
+            # punto cerca del origen (simula inicio / en progreso)
             ciudad = ruta.origin
-        elif ruta.status == "completada":
+            coords = ciudades_coords.get(ciudad)
+            if coords:
+                jitter = [random.uniform(-0.2, 0.2), random.uniform(-0.2, 0.2)]
+                point = [coords[0] + jitter[0], coords[1] + jitter[1]]
+            else:
+                continue
+        elif status in ["completada", "finalizada"]:
             ciudad = ruta.destination
+            coords = ciudades_coords.get(ciudad)
+            if coords:
+                point = coords
+            else:
+                continue
         else:
             continue
 
-        coords = ciudades_coords.get(ciudad)
-        if coords and ruta.truck:
-            camiones.append({
-                "plate": ruta.truck.plate,
-                "status": ruta.status,
-                "coords": coords
-            })
+        camiones.append({
+            "plate": truck.plate,
+            "status": ruta.status,
+            "coords": point
+        })
 
     return jsonify(camiones)
 
