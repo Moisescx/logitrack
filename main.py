@@ -314,6 +314,72 @@ def mapa_data():
 def mapa():
     return render_template("mapa_chofer.html")
 
+
+@app.route("/mapa_despachador_data")
+@login_required
+def mapa_despachador_data():
+    """Devuelve marcadores para todas las rutas de la flota del despachador actual."""
+    camiones = []
+    if current_user.role != 'despachador':
+        return jsonify(camiones)
+
+    # Obtener todos los camiones del despachador
+    trucks = Truck.query.filter_by(dispatcher_id=current_user.id).all()
+
+    ciudades_coords = {
+        "Santiago": [-33.4489, -70.6693],
+        "Valparaíso": [-33.0472, -71.6127],
+        "Concepción": [-36.8201, -73.0444],
+        "Antofagasta": [-23.6509, -70.3975],
+        "La Serena": [-29.9027, -71.2520],
+        "Rancagua": [-34.1701, -70.7447],
+        "Temuco": [-38.7397, -72.5984],
+        "Puerto Montt": [-41.4717, -72.9369],
+        "Valdivia": [-39.8196, -73.2459],
+        "Arica": [-18.4783, -70.3126]
+    }
+
+    for truck in trucks:
+        routes = Route.query.filter_by(truck_id=truck.id).all()
+        for ruta in routes:
+            status = (ruta.status or '').lower()
+            if status in ["pendiente", "en_progreso", "en curso", "en ruta"]:
+                ciudad = ruta.origin
+                coords = ciudades_coords.get(ciudad)
+                if coords:
+                    jitter = [random.uniform(-0.2, 0.2), random.uniform(-0.2, 0.2)]
+                    point = [coords[0] + jitter[0], coords[1] + jitter[1]]
+                else:
+                    continue
+            elif status in ["completada", "finalizada"]:
+                ciudad = ruta.destination
+                coords = ciudades_coords.get(ciudad)
+                if coords:
+                    point = coords
+                else:
+                    continue
+            else:
+                continue
+
+            camiones.append({
+                "plate": truck.plate,
+                "driver": truck.driver.username if truck.driver else None,
+                "cargo": truck.cargo,
+                "status": ruta.status,
+                "coords": point,
+                "route_id": ruta.id
+            })
+
+    return jsonify(camiones)
+
+
+@app.route("/mapa_despachador")
+@login_required
+def mapa_despachador():
+    if current_user.role != 'despachador':
+        return "No autorizado", 403
+    return render_template("mapa_despachador.html")
+
 @app.route("/logout")
 @login_required
 def logout():

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mapa de la Flota</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+    <div id="map" style="height: 700px;"></div>
+
+    <script>
+        var map = L.map('map').setView([-33.4489, -70.6693], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        fetch('/mapa_despachador_data')
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(c => {
+                    var popup = `<b>Camión:</b> ${c.plate}`;
+                    if (c.driver) popup += `<br><b>Chofer:</b> ${c.driver}`;
+                    if (c.cargo) popup += `<br><b>Carga:</b> ${c.cargo}`;
+                    popup += `<br><b>Estado:</b> ${c.status}`;
+
+                    L.marker(c.coords).addTo(map).bindPopup(popup);
+                });
+            });
+    </script>
+</body>
+</html>
