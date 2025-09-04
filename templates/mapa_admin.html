@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mapa Global - Admin</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+    <div id="map" style="height: 700px;"></div>
+
+    <script>
+        var map = L.map('map').setView([-33.4489, -70.6693], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        fetch('/mapa_admin_data')
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(r => {
+                    var popup = `<b>Ruta ${r.route_id}</b><br><b>Origen:</b> ${r.origin}<br><b>Destino:</b> ${r.destination}`;
+                    if (r.truck_plate) popup += `<br><b>Camión:</b> ${r.truck_plate}`;
+                    popup += `<br><b>Estado:</b> ${r.status}`;
+
+                    L.marker(r.coords).addTo(map).bindPopup(popup);
+                });
+            });
+    </script>
+</body>
+</html>

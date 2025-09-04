@@ -102,13 +102,6 @@ def login():
 
     return render_template("login.html")
 
-@app.route("/dashboard_admin")
-@login_required
-def dashboard_admin():
-    if current_user.role != "admin":
-        return "No autorizado", 403
-    return render_template("dashboard_admin.html")
-
 @app.route("/dashboard_chofer")
 @login_required
 def dashboard_chofer():
@@ -379,6 +372,86 @@ def mapa_despachador():
     if current_user.role != 'despachador':
         return "No autorizado", 403
     return render_template("mapa_despachador.html")
+
+
+@app.route('/dashboard_admin')
+@login_required
+def dashboard_admin():
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    # KPIs básicos
+    total_trucks = Truck.query.count()
+    total_drivers = User.query.filter_by(role='chofer').count()
+    total_dispatchers = User.query.filter_by(role='despachador').count()
+    total_routes = Route.query.count()
+
+    return render_template('dashboard_admin.html',
+                           total_trucks=total_trucks,
+                           total_drivers=total_drivers,
+                           total_dispatchers=total_dispatchers,
+                           total_routes=total_routes)
+
+
+@app.route('/mapa_admin')
+@login_required
+def mapa_admin():
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    return render_template('mapa_admin.html')
+
+
+@app.route('/mapa_admin_data')
+@login_required
+def mapa_admin_data():
+    """Devuelve marcadores para todas las rutas en la DB (para el admin)."""
+    if current_user.role != 'admin':
+        return jsonify([])
+
+    camiones = []
+    ciudades_coords = {
+        "Santiago": [-33.4489, -70.6693],
+        "Valparaíso": [-33.0472, -71.6127],
+        "Concepción": [-36.8201, -73.0444],
+        "Antofagasta": [-23.6509, -70.3975],
+        "La Serena": [-29.9027, -71.2520],
+        "Rancagua": [-34.1701, -70.7447],
+        "Temuco": [-38.7397, -72.5984],
+        "Puerto Montt": [-41.4717, -72.9369],
+        "Valdivia": [-39.8196, -73.2459],
+        "Arica": [-18.4783, -70.3126]
+    }
+
+    routes = Route.query.all()
+    for ruta in routes:
+        status = (ruta.status or '').lower()
+        if status in ["pendiente", "en_progreso", "en curso", "en ruta"]:
+            ciudad = ruta.origin
+            coords = ciudades_coords.get(ciudad)
+            if coords:
+                jitter = [random.uniform(-0.3, 0.3), random.uniform(-0.3, 0.3)]
+                point = [coords[0] + jitter[0], coords[1] + jitter[1]]
+            else:
+                continue
+        elif status in ["completada", "finalizada"]:
+            ciudad = ruta.destination
+            coords = ciudades_coords.get(ciudad)
+            if coords:
+                point = coords
+            else:
+                continue
+        else:
+            continue
+
+        camiones.append({
+            'route_id': ruta.id,
+            'origin': ruta.origin,
+            'destination': ruta.destination,
+            'status': ruta.status,
+            'truck_plate': ruta.truck.plate if ruta.truck else None,
+            'coords': point
+        })
+
+    return jsonify(camiones)
 
 @app.route("/logout")
 @login_required

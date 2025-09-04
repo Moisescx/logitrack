@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="max-w-7xl mx-auto p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold">📊 Panel Administrador</h2>
+      <a href="{{ url_for('logout') }}" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm">Cerrar sesión</a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-lg shadow">
+        <p class="text-sm text-gray-500">Camiones</p>
+        <p class="text-2xl font-bold">{{ total_trucks }}</p>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <p class="text-sm text-gray-500">Choferes</p>
+        <p class="text-2xl font-bold">{{ total_drivers }}</p>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <p class="text-sm text-gray-500">Despachadores</p>
+        <p class="text-2xl font-bold">{{ total_dispatchers }}</p>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <p class="text-sm text-gray-500">Rutas</p>
+        <p class="text-2xl font-bold">{{ total_routes }}</p>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <a href="{{ url_for('mapa_admin') }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Ver mapa global</a>
+    </div>
+
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="font-semibold mb-2">Acciones rápidas</h3>
+      <p class="text-sm text-gray-500">(Por implementar: búsqueda, filtros, editar camiones, asignar rutas)</p>
+    </div>
+  </div>
+</body>
+</html>
