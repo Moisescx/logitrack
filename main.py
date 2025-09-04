@@ -385,11 +385,17 @@ def dashboard_admin():
     total_dispatchers = User.query.filter_by(role='despachador').count()
     total_routes = Route.query.count()
 
+    # Pequeñas listas para vista rápida y enlaces CRUD
+    recent_trucks = Truck.query.order_by(Truck.id.desc()).limit(6).all()
+    recent_routes = Route.query.order_by(Route.id.desc()).limit(6).all()
+
     return render_template('dashboard_admin.html',
                            total_trucks=total_trucks,
                            total_drivers=total_drivers,
                            total_dispatchers=total_dispatchers,
-                           total_routes=total_routes)
+                           total_routes=total_routes,
+                           recent_trucks=recent_trucks,
+                           recent_routes=recent_routes)
 
 
 @app.route('/mapa_admin')
@@ -452,6 +458,132 @@ def mapa_admin_data():
         })
 
     return jsonify(camiones)
+
+
+### Admin CRUD: Trucks
+@app.route('/admin/trucks')
+@login_required
+def admin_trucks():
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    trucks = Truck.query.all()
+    return render_template('admin_trucks.html', trucks=trucks)
+
+
+@app.route('/admin/trucks/new', methods=['GET', 'POST'])
+@login_required
+def admin_truck_new():
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    if request.method == 'POST':
+        plate = request.form.get('plate')
+        status = request.form.get('status')
+        cargo = request.form.get('cargo')
+        dispatcher_id = request.form.get('dispatcher_id') or None
+        driver_id = request.form.get('driver_id') or None
+        truck = Truck(plate=plate, status=status, cargo=cargo,
+                      dispatcher_id=int(dispatcher_id) if dispatcher_id else None,
+                      driver_id=int(driver_id) if driver_id else None)
+        db.session.add(truck)
+        db.session.commit()
+        return redirect(url_for('admin_trucks'))
+
+    drivers = User.query.filter_by(role='chofer').all()
+    dispatchers = User.query.filter_by(role='despachador').all()
+    return render_template('admin_truck_form.html', drivers=drivers, dispatchers=dispatchers, truck=None)
+
+
+@app.route('/admin/trucks/edit/<int:truck_id>', methods=['GET', 'POST'])
+@login_required
+def admin_truck_edit(truck_id):
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    truck = Truck.query.get_or_404(truck_id)
+    if request.method == 'POST':
+        truck.plate = request.form.get('plate')
+        truck.status = request.form.get('status')
+        truck.cargo = request.form.get('cargo')
+        dispatcher_id = request.form.get('dispatcher_id') or None
+        driver_id = request.form.get('driver_id') or None
+        truck.dispatcher_id = int(dispatcher_id) if dispatcher_id else None
+        truck.driver_id = int(driver_id) if driver_id else None
+        db.session.commit()
+        return redirect(url_for('admin_trucks'))
+
+    drivers = User.query.filter_by(role='chofer').all()
+    dispatchers = User.query.filter_by(role='despachador').all()
+    return render_template('admin_truck_form.html', drivers=drivers, dispatchers=dispatchers, truck=truck)
+
+
+@app.route('/admin/trucks/delete/<int:truck_id>', methods=['POST'])
+@login_required
+def admin_truck_delete(truck_id):
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    truck = Truck.query.get_or_404(truck_id)
+    db.session.delete(truck)
+    db.session.commit()
+    return redirect(url_for('admin_trucks'))
+
+
+### Admin CRUD: Routes
+@app.route('/admin/routes')
+@login_required
+def admin_routes():
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    routes = Route.query.all()
+    return render_template('admin_routes.html', routes=routes)
+
+
+@app.route('/admin/routes/new', methods=['GET', 'POST'])
+@login_required
+def admin_route_new():
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    if request.method == 'POST':
+        origin = request.form.get('origin')
+        destination = request.form.get('destination')
+        status = request.form.get('status')
+        truck_id = request.form.get('truck_id') or None
+        route = Route(origin=origin, destination=destination, status=status,
+                      truck_id=int(truck_id) if truck_id else None)
+        db.session.add(route)
+        db.session.commit()
+        return redirect(url_for('admin_routes'))
+
+    trucks = Truck.query.all()
+    return render_template('admin_route_form.html', trucks=trucks, route=None)
+
+
+@app.route('/admin/routes/edit/<int:route_id>', methods=['GET', 'POST'])
+@login_required
+def admin_route_edit(route_id):
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    route = Route.query.get_or_404(route_id)
+    if request.method == 'POST':
+        route.origin = request.form.get('origin')
+        route.destination = request.form.get('destination')
+        route.status = request.form.get('status')
+        truck_id = request.form.get('truck_id') or None
+        route.truck_id = int(truck_id) if truck_id else None
+        db.session.commit()
+        return redirect(url_for('admin_routes'))
+
+    trucks = Truck.query.all()
+    return render_template('admin_route_form.html', trucks=trucks, route=route)
+
+
+@app.route('/admin/routes/delete/<int:route_id>', methods=['POST'])
+@login_required
+def admin_route_delete(route_id):
+    if current_user.role != 'admin':
+        return "No autorizado", 403
+    route = Route.query.get_or_404(route_id)
+    db.session.delete(route)
+    db.session.commit()
+    return redirect(url_for('admin_routes'))
 
 @app.route("/logout")
 @login_required

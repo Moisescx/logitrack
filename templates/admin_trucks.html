@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Camiones</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="max-w-6xl mx-auto p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold">Camiones</h2>
+      <a href="{{ url_for('admin_truck_new') }}" class="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded">Nuevo camión</a>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow">
+      <table class="w-full text-left">
+        <thead>
+          <tr>
+            <th>Placa</th>
+            <th>Chofer</th>
+            <th>Despachador</th>
+            <th>Estado</th>
+            <th>Carga</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in trucks %}
+          <tr class="border-t">
+            <td>{{ t.plate }}</td>
+            <td>{{ t.driver.username if t.driver else '—' }}</td>
+            <td>{{ t.dispatcher.username if t.dispatcher else '—' }}</td>
+            <td>{{ t.status }}</td>
+            <td>{{ t.cargo or '—' }}</td>
+            <td>
+              <a href="{{ url_for('admin_truck_edit', truck_id=t.id) }}" class="text-blue-600 mr-2">Editar</a>
+              <form action="{{ url_for('admin_truck_delete', truck_id=t.id) }}" method="post" style="display:inline">
+                <button type="submit" class="text-red-600">Borrar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

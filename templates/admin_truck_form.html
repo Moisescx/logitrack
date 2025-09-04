@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Camión</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="max-w-3xl mx-auto p-6">
+    <h2 class="text-2xl font-bold mb-4">{{ 'Editar' if truck else 'Nuevo' }} Camión</h2>
+
+    <form method="post">
+      <div class="mb-3">
+        <label class="block text-sm font-medium">Placa</label>
+        <input name="plate" value="{{ truck.plate if truck else '' }}" class="w-full border rounded px-2 py-1">
+      </div>
+      <div class="mb-3">
+        <label class="block text-sm font-medium">Estado</label>
+        <select name="status" class="w-full border rounded px-2 py-1">
+          <option value="disponible" {% if truck and truck.status=='disponible' %}selected{% endif %}>Disponible</option>
+          <option value="en ruta" {% if truck and truck.status=='en ruta' %}selected{% endif %}>En ruta</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="block text-sm font-medium">Carga</label>
+        <input name="cargo" value="{{ truck.cargo if truck else '' }}" class="w-full border rounded px-2 py-1">
+      </div>
+      <div class="mb-3">
+        <label class="block text-sm font-medium">Chofer</label>
+        <select name="driver_id" class="w-full border rounded px-2 py-1">
+          <option value="">-- Ninguno --</option>
+          {% for d in drivers %}
+          <option value="{{ d.id }}" {% if truck and truck.driver_id==d.id %}selected{% endif %}>{{ d.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="block text-sm font-medium">Despachador</label>
+        <select name="dispatcher_id" class="w-full border rounded px-2 py-1">
+          <option value="">-- Ninguno --</option>
+          {% for d in dispatchers %}
+          <option value="{{ d.id }}" {% if truck and truck.dispatcher_id==d.id %}selected{% endif %}>{{ d.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="flex gap-2">
+        <button class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+        <a href="{{ url_for('admin_trucks') }}" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

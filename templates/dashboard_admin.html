@@ -35,9 +35,38 @@
       <a href="{{ url_for('mapa_admin') }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Ver mapa global</a>
     </div>
 
-    <div class="bg-white p-4 rounded-lg shadow">
-      <h3 class="font-semibold mb-2">Acciones rápidas</h3>
-      <p class="text-sm text-gray-500">(Por implementar: búsqueda, filtros, editar camiones, asignar rutas)</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-lg shadow">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">Camiones recientes</h3>
+          <a href="{{ url_for('admin_trucks') }}" class="text-sm text-blue-600">Ver todos</a>
+        </div>
+        {% if recent_trucks %}
+        <ul class="text-sm">
+          {% for t in recent_trucks %}
+            <li class="py-1 border-t">{{ t.plate }} — {{ t.cargo or 'Sin carga' }} — {{ t.status }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+          <p class="text-sm text-gray-500">No hay camiones.</p>
+        {% endif %}
+      </div>
+
+      <div class="bg-white p-4 rounded-lg shadow">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold">Rutas recientes</h3>
+          <a href="{{ url_for('admin_routes') }}" class="text-sm text-blue-600">Ver todas</a>
+        </div>
+        {% if recent_routes %}
+        <ul class="text-sm">
+          {% for r in recent_routes %}
+            <li class="py-1 border-t">{{ r.origin }} → {{ r.destination }} — {{ r.status }} {% if r.truck %} ({{ r.truck.plate }}){% endif %}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+          <p class="text-sm text-gray-500">No hay rutas.</p>
+        {% endif %}
+      </div>
     </div>
   </div>
 </body>
