@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <title>Panel Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100 text-gray-900">
   <div class="max-w-7xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-2xl font-bold">📊 Panel Administrador</h2>
-      <a href="{{ url_for('logout') }}" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm">Cerrar sesión</a>
+      <div class="flex gap-2">
+        <a href="{{ url_for('mapa_admin') }}"
+          class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm">Ver mapa global</a>
+        <a href="{{ url_for('logout') }}"
+          class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm">Cerrar sesión</a>
+      </div>
     </div>
+
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div class="bg-white p-4 rounded-lg shadow">
@@ -31,9 +39,6 @@
       </div>
     </div>
 
-    <div class="mb-4">
-      <a href="{{ url_for('mapa_admin') }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Ver mapa global</a>
-    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div class="bg-white p-4 rounded-lg shadow">
@@ -44,11 +49,11 @@
         {% if recent_trucks %}
         <ul class="text-sm">
           {% for t in recent_trucks %}
-            <li class="py-1 border-t">{{ t.plate }} — {{ t.cargo or 'Sin carga' }} — {{ t.status }}</li>
+          <li class="py-1 border-t">{{ t.plate }} — {{ t.cargo or 'Sin carga' }} — {{ t.status }}</li>
           {% endfor %}
         </ul>
         {% else %}
-          <p class="text-sm text-gray-500">No hay camiones.</p>
+        <p class="text-sm text-gray-500">No hay camiones.</p>
         {% endif %}
       </div>
 
@@ -60,14 +65,37 @@
         {% if recent_routes %}
         <ul class="text-sm">
           {% for r in recent_routes %}
-            <li class="py-1 border-t">{{ r.origin }} → {{ r.destination }} — {{ r.status }} {% if r.truck %} ({{ r.truck.plate }}){% endif %}</li>
+          <li class="py-1 border-t">{{ r.origin }} → {{ r.destination }} — {{ r.status }} {% if r.truck %} ({{
+            r.truck.plate }}){% endif %}</li>
           {% endfor %}
         </ul>
         {% else %}
-          <p class="text-sm text-gray-500">No hay rutas.</p>
+        <p class="text-sm text-gray-500">No hay rutas.</p>
         {% endif %}
       </div>
     </div>
+
+    <!-- 📜 Actividad reciente -->
+    <div class="bg-white p-4 rounded-lg shadow mb-6">
+      <h3 class="font-semibold mb-2">Actividad reciente</h3>
+      {% if recent_activity %}
+      <ul class="text-sm">
+        {% for act in recent_activity %}
+        <li class="py-1 border-t">
+          {% if act.type == "camión" %}
+          🚚 {{ act.desc }}
+          {% elif act.type == "ruta" %}
+          🛣️ {{ act.desc }}
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-gray-500 text-sm">No hay actividad reciente.</p>
+      {% endif %}
+    </div>
   </div>
+
 </body>
+
 </html>

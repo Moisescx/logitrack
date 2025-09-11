@@ -7,6 +7,9 @@ from flask_login import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from collections import Counter
+
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mmarinliventuslab2004'  # contraseña secreta para sesiones
@@ -379,23 +382,61 @@ def mapa_despachador():
 def dashboard_admin():
     if current_user.role != 'admin':
         return "No autorizado", 403
+
     # KPIs básicos
     total_trucks = Truck.query.count()
     total_drivers = User.query.filter_by(role='chofer').count()
     total_dispatchers = User.query.filter_by(role='despachador').count()
     total_routes = Route.query.count()
 
-    # Pequeñas listas para vista rápida y enlaces CRUD
-    recent_trucks = Truck.query.order_by(Truck.id.desc()).limit(6).all()
-    recent_routes = Route.query.order_by(Route.id.desc()).limit(6).all()
+    # Camiones recientes (los que ya tenías)
+    recent_trucks = Truck.query.order_by(Truck.id.desc()).limit(5).all()
+    # Rutas recientes
+    recent_routes = Route.query.order_by(Route.id.desc()).limit(5).all()
 
-    return render_template('dashboard_admin.html',
-                           total_trucks=total_trucks,
-                           total_drivers=total_drivers,
-                           total_dispatchers=total_dispatchers,
-                           total_routes=total_routes,
-                           recent_trucks=recent_trucks,
-                           recent_routes=recent_routes)
+    # 📊 Extra: Distribución de camiones por estado
+    truck_status_counts = (
+        db.session.query(Truck.status, db.func.count(Truck.id))
+        .group_by(Truck.status).all()
+    )
+    truck_status_data = {status: count for status, count in truck_status_counts}
+
+    # 📊 Extra: Distribución de rutas por estado
+    route_status_counts = (
+        db.session.query(Route.status, db.func.count(Route.id))
+        .group_by(Route.status).all()
+    )
+    route_status_data = {status: count for status, count in route_status_counts}
+
+    # 📜 Extra: timeline combinado (camiones + rutas)
+    recent_activity = []
+    for t in recent_trucks:
+        recent_activity.append({
+            "type": "camión",
+            "desc": f"Camión {t.plate} agregado (estado: {t.status})"
+        })
+    for r in recent_routes:
+        txt = f"Ruta {r.origin} → {r.destination} ({r.status})"
+        if r.truck:
+            txt += f" asignada al camión {r.truck.plate}"
+        recent_activity.append({"type": "ruta", "desc": txt})
+
+    # Dejar máximo 6 actividades
+    recent_activity = recent_activity[:6]
+
+    return render_template(
+        'dashboard_admin.html',
+        total_trucks=total_trucks,
+        total_drivers=total_drivers,
+        total_dispatchers=total_dispatchers,
+        total_routes=total_routes,
+        recent_trucks=recent_trucks,
+        recent_routes=recent_routes,
+        truck_status_data=truck_status_data,
+        route_status_data=route_status_data,
+        recent_activity=recent_activity
+    )
+
 
 
 @app.route('/mapa_admin')
