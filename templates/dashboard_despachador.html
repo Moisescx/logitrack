@@ -7,14 +7,20 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 text-gray-900">
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
 
   <div class="max-w-6xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-2xl font-bold">📋 Panel del Despachador</h2>
       <div class="flex items-center gap-3">
-        <a href="{{ url_for('mapa_despachador') }}" class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm">Ver mapa de la flota</a>
-        <a href="{{ url_for('logout') }}" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm">Cerrar sesión</a>
+        <button onclick="document.documentElement.classList.toggle('dark')"
+          class="px-3 py-2 rounded bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
+          🌓 Cambiar tema
+        </button>
+        <a href="{{ url_for('mapa_despachador') }}"
+          class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm">Ver mapa de la flota</a>
+        <a href="{{ url_for('logout') }}"
+          class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm">Cerrar sesión</a>
       </div>
     </div>
 
@@ -23,11 +29,11 @@
     {% if trucks %}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       {% for truck in trucks %}
-      <div class="bg-white p-4 rounded-xl shadow">
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow">
         <p><strong>Placa:</strong> {{ truck.plate }}</p>
-  <p><strong>Chofer:</strong> {{ truck.driver.username if truck.driver else 'Sin chofer' }}</p>
-  <p><strong>Estado:</strong> {{ truck.status }}</p>
-  <p><strong>Carga:</strong> {{ truck.cargo or 'Desconocida' }}</p>
+        <p><strong>Chofer:</strong> {{ truck.driver.username if truck.driver else 'Sin chofer' }}</p>
+        <p><strong>Estado:</strong> {{ truck.status }}</p>
+        <p><strong>Carga:</strong> {{ truck.cargo or 'Desconocida' }}</p>
       </div>
       {% endfor %}
     </div>
@@ -40,7 +46,7 @@
     {% if available_routes %}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       {% for route in available_routes %}
-      <div class="bg-white p-4 rounded-xl shadow flex flex-col justify-between">
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow flex flex-col justify-between">
         <div>
           <p><strong>Origen:</strong> {{ route.origin }}</p>
           <p><strong>Destino:</strong> {{ route.destination }}</p>
@@ -55,7 +61,6 @@
           </p>
         </div>
         <div class="mt-4">
-          <!-- Aquí en vez de "Aceptar" le damos la opción de asignar -->
           <a href="{{ url_for('asignar_chofer', route_id=route.id) }}"
             class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg">
             Asignar Chofer
@@ -69,6 +74,12 @@
     {% endif %}
 
   </div>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
 
 </body>
 

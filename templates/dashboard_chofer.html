@@ -7,31 +7,49 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 text-gray-900">
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
 
   <div class="max-w-6xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-2xl font-bold">🚛 Panel del Chofer</h2>
-      <a href="{{ url_for('logout') }}" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm">Cerrar sesión</a>
+      <div class="flex gap-3">
+        <button onclick="document.documentElement.classList.toggle('dark')"
+          class="px-3 py-2 rounded bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
+          🌓 Cambiar tema
+        </button>
+        <a href="{{ url_for('logout') }}"
+          class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm">Cerrar sesión</a>
+      </div>
     </div>
 
     <!-- Info del camión -->
-    {% if truck %}
-    <div class="bg-blue-100 border border-blue-300 text-blue-800 p-4 rounded-xl mb-6 shadow">
-      <strong>Camión asignado:</strong> {{ truck.plate }}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow text-center">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Camión asignado</p>
+        <p class="text-xl font-bold dark:text-white">{{ truck.plate if truck else "—" }}</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow text-center">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Rutas pendientes</p>
+        <p class="text-xl font-bold text-yellow-600 dark:text-yellow-400">
+          {{ assigned_routes|selectattr("status","equalto","pendiente")|list|length }}
+        </p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow text-center">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Rutas completadas</p>
+        <p class="text-xl font-bold text-green-600 dark:text-green-400">
+          {{ assigned_routes|selectattr("status","equalto","completada")|list|length }}
+        </p>
+      </div>
     </div>
-    {% else %}
-    <div class="bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded-xl mb-6 shadow">
-      No tienes un camión asignado aún.
-    </div>
-    {% endif %}
+
 
     <!-- Rutas Asignadas -->
     <h3 class="text-xl font-semibold mb-3">📋 Tus rutas programadas</h3>
     {% if assigned_routes %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
       {% for route in assigned_routes %}
-      <div class="bg-white p-4 rounded-xl shadow flex flex-col justify-between">
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow flex flex-col justify-between">
         <div>
           <p><strong>Origen:</strong> {{ route.origin }}</p>
           <p><strong>Destino:</strong> {{ route.destination }}</p>
@@ -70,7 +88,11 @@
       </a>
     </div>
 
-
+    <script>
+      tailwind.config = {
+        darkMode: 'class'
+      }
+    </script>
 
   </div>
 

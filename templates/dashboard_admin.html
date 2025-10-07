@@ -7,11 +7,15 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 text-gray-900">
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
   <div class="max-w-7xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-2xl font-bold">📊 Panel Administrador</h2>
       <div class="flex gap-2">
+        <button onclick="document.documentElement.classList.toggle('dark')"
+          class="px-3 py-2 rounded bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
+          🌓 Cambiar tema
+        </button>
         <a href="{{ url_for('mapa_admin') }}"
           class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm">Ver mapa global</a>
         <a href="{{ url_for('logout') }}"
@@ -21,35 +25,36 @@
 
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white p-4 rounded-lg shadow">
-        <p class="text-sm text-gray-500">Camiones</p>
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Camiones</p>
         <p class="text-2xl font-bold">{{ total_trucks }}</p>
       </div>
-      <div class="bg-white p-4 rounded-lg shadow">
-        <p class="text-sm text-gray-500">Choferes</p>
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Choferes</p>
         <p class="text-2xl font-bold">{{ total_drivers }}</p>
       </div>
-      <div class="bg-white p-4 rounded-lg shadow">
-        <p class="text-sm text-gray-500">Despachadores</p>
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Despachadores</p>
         <p class="text-2xl font-bold">{{ total_dispatchers }}</p>
       </div>
-      <div class="bg-white p-4 rounded-lg shadow">
-        <p class="text-sm text-gray-500">Rutas</p>
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Rutas</p>
         <p class="text-2xl font-bold">{{ total_routes }}</p>
       </div>
     </div>
 
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <div class="bg-white p-4 rounded-lg shadow">
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold">Camiones recientes</h3>
-          <a href="{{ url_for('admin_trucks') }}" class="text-sm text-blue-600">Ver todos</a>
+          <h3 class="font-semibold dark:text-white">Camiones recientes</h3>
+          <a href="{{ url_for('admin_trucks') }}" class="text-sm text-blue-600 dark:text-blue-400">Ver todos</a>
         </div>
         {% if recent_trucks %}
-        <ul class="text-sm">
+        <ul class="text-sm dark:text-white">
           {% for t in recent_trucks %}
-          <li class="py-1 border-t">{{ t.plate }} — {{ t.cargo or 'Sin carga' }} — {{ t.status }}</li>
+          <li class="py-1 border-t dark:border-gray-700">{{ t.plate }} — {{ t.cargo or 'Sin carga' }} — {{ t.status }}
+          </li>
           {% endfor %}
         </ul>
         {% else %}
@@ -57,15 +62,16 @@
         {% endif %}
       </div>
 
-      <div class="bg-white p-4 rounded-lg shadow">
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold">Rutas recientes</h3>
-          <a href="{{ url_for('admin_routes') }}" class="text-sm text-blue-600">Ver todas</a>
+          <h3 class="font-semibold dark:text-white">Rutas recientes</h3>
+          <a href="{{ url_for('admin_routes') }}" class="text-sm text-blue-600 dark:text-blue-400">Ver todas</a>
         </div>
         {% if recent_routes %}
-        <ul class="text-sm">
+        <ul class="text-sm dark:text-white">
           {% for r in recent_routes %}
-          <li class="py-1 border-t">{{ r.origin }} → {{ r.destination }} — {{ r.status }} {% if r.truck %} ({{
+          <li class="py-1 border-t dark:border-gray-700">{{ r.origin }} → {{ r.destination }} — {{ r.status }} {% if
+            r.truck %} ({{
             r.truck.plate }}){% endif %}</li>
           {% endfor %}
         </ul>
@@ -76,12 +82,12 @@
     </div>
 
     <!-- 📜 Actividad reciente -->
-    <div class="bg-white p-4 rounded-lg shadow mb-6">
-      <h3 class="font-semibold mb-2">Actividad reciente</h3>
+    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow mb-6">
+      <h3 class="font-semibold mb-2 dark:text-white">Actividad reciente</h3>
       {% if recent_activity %}
-      <ul class="text-sm">
+      <ul class="text-sm dark:text-white">
         {% for act in recent_activity %}
-        <li class="py-1 border-t">
+        <li class="py-1 border-t dark:border-gray-700">
           {% if act.type == "camión" %}
           🚚 {{ act.desc }}
           {% elif act.type == "ruta" %}
@@ -95,6 +101,11 @@
       {% endif %}
     </div>
   </div>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
 
 </body>
 

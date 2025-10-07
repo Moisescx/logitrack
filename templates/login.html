@@ -12,33 +12,47 @@
 
     <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
         <!-- Encabezado -->
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Iniciar Sesión</h1>
+        <h1 class="text-3xl font-extrabold text-center text-gray-900 mb-2">Iniciar Sesión</h1>
         <img src="{{url_for('static', filename='img/camion-de-reparto.gif')}}" alt="Camion en movimiento"
             class="w-32 mx-auto mb-6 ">
 
         <!-- Formulario -->
         <form method="POST" class="space-y-6">
             <!-- Usuario -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Usuario</label>
-                <input type="text" name="username" required
-                    class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+            <div class="relative">
+                <input type="text" name="username" required placeholder="Usuario"
+                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                <span class="absolute left-3 top-2.5 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5.121 17.804A13.937 13.937 0 0112 15c2.485 0 4.779.832 6.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </span>
             </div>
 
             <!-- Contraseña -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Contraseña</label>
-                <input type="password" name="password" required
-                    class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+            <div class="relative">
+                <input type="password" name="password" required placeholder="Contraseña" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm 
+           focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                <span class="absolute left-3 top-2.5 text-gray-400">
+                    <!-- Ícono de candado -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 11c1.657 0 3 1.343 3 3v2H9v-2c0-1.657 1.343-3 3-3z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 11V7a5 5 0 00-10 0v4" />
+                    </svg>
+                </span>
             </div>
 
             <!-- Botón -->
             <button type="submit"
-                class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
+                class="w-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white font-semibold py-2 rounded-lg shadow-md hover:from-indigo-700 hover:to-blue-600 transition-all duration-300">
                 Entrar
             </button>
         </form>
-
 </body>
 
 </html>
