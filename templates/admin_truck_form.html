@@ -7,12 +7,18 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 text-gray-900">
-  <div class="max-w-3xl mx-auto p-6">
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+  <div class="max-w-6xl mx-auto p-6">
+    <div class="flex gap-3 mb-4">
+      <button onclick="document.documentElement.classList.toggle('dark')"
+        class="px-3 py-2 rounded bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
+        🌓 Cambiar tema
+      </button>
+    </div>
     <!-- Botón volver -->
     <div class="mb-4">
       <a href="{{ url_for('dashboard_admin') }}"
-        class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg shadow">
+        class="inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm shadow hover:bg-gray-400 dark:hover:bg-gray-600 rounded-lg">
         <!-- Icono flecha -->
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
@@ -23,50 +29,72 @@
     </div>
     <h2 class="text-2xl font-bold mb-4">{{ 'Editar' if truck else 'Nuevo' }} Camión</h2>
 
-    <form method="post">
-      <div class="mb-3">
-        <label class="block text-sm font-medium">Placa</label>
-        <input name="plate" value="{{ truck.plate if truck else '' }}" class="w-full border rounded px-2 py-1">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4 max-w-3xl mx-auto">
+          {% for category, msg in messages %}
+            <div class="px-3 py-2 rounded mb-2 {{ 'bg-red-100 text-red-800' if category=='error' else 'bg-green-100 text-green-800' }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
+        <div class="mb-3">
+        <label class="block text-sm font-medium dark:text-white">Placa</label>
+        <input name="plate" value="{{ request.form.plate if request.method=='POST' else (truck.plate if truck else '') }}"
+          class="w-full border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
       </div>
-      <div class="mb-3">
-        <label class="block text-sm font-medium">Estado</label>
-        <select name="status" class="w-full border rounded px-2 py-1">
-          <option value="disponible" {% if truck and truck.status=='disponible' %}selected{% endif %}>Disponible
+        <div class="mb-3">
+        <label class="block text-sm font-medium dark:text-white">Estado</label>
+        <select name="status"
+          class="w-full border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="disponible" {% if (request.method=='POST' and request.form.status=='disponible') or (truck and truck.status=='disponible') %}selected{% endif %}>Disponible
           </option>
-          <option value="en ruta" {% if truck and truck.status=='en ruta' %}selected{% endif %}>En ruta</option>
+          <option value="en ruta" {% if (request.method=='POST' and request.form.status=='en ruta') or (truck and truck.status=='en ruta') %}selected{% endif %}>En ruta</option>
         </select>
       </div>
       <div class="mb-3">
-        <label class="block text-sm font-medium">Carga</label>
-        <input name="cargo" value="{{ truck.cargo if truck else '' }}" class="w-full border rounded px-2 py-1">
+        <label class="block text-sm font-medium dark:text-white">Carga</label>
+        <input name="cargo" value="{{ request.form.cargo if request.method=='POST' else (truck.cargo if truck else '') }}"
+          class="w-full border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
       </div>
       <div class="mb-3">
-        <label class="block text-sm font-medium">Chofer</label>
-        <select name="driver_id" class="w-full border rounded px-2 py-1">
+        <label class="block text-sm font-medium dark:text-white">Chofer</label>
+          <select name="driver_id"
+          class="w-full border rounded px-2 py-1w-full border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">-- Ninguno --</option>
           {% for d in drivers %}
-          <option value="{{ d.id }}" {% if truck and truck.driver_id==d.id %}selected{% endif %}>{{ d.username }}
+          <option value="{{ d.id }}" {% if (request.method=='POST' and request.form.driver_id==d.id|string) or (truck and truck.driver_id==d.id) %}selected{% endif %}>{{ d.username }}
           </option>
           {% endfor %}
         </select>
       </div>
       <div class="mb-3">
-        <label class="block text-sm font-medium">Despachador</label>
-        <select name="dispatcher_id" class="w-full border rounded px-2 py-1">
+        <label class="block text-sm font-medium dark:text-white">Despachador</label>
+        <select name="dispatcher_id"
+          class="w-full border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">-- Ninguno --</option>
           {% for d in dispatchers %}
-          <option value="{{ d.id }}" {% if truck and truck.dispatcher_id==d.id %}selected{% endif %}>{{ d.username }}
+          <option value="{{ d.id }}" {% if (request.method=='POST' and request.form.dispatcher_id==d.id|string) or (truck and truck.dispatcher_id==d.id) %}selected{% endif %}>{{ d.username }}
           </option>
           {% endfor %}
         </select>
       </div>
 
       <div class="flex gap-2">
-        <button class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
-        <a href="{{ url_for('admin_trucks') }}" class="px-4 py-2 bg-gray-200 rounded">Cancelar</a>
+        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">Guardar</button>
+        <a href="{{ url_for('admin_trucks') }}"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 rounded inline-block">Cancelar</a>
       </div>
     </form>
   </div>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
 </body>
 
 </html>

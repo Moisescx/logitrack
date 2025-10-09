@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 import random
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
@@ -522,11 +522,20 @@ def admin_truck_new():
         cargo = request.form.get('cargo')
         dispatcher_id = request.form.get('dispatcher_id') or None
         driver_id = request.form.get('driver_id') or None
+
+        # Validación de campos obligatorios
+        if not plate or not status:
+            flash('Por favor, completa los campos obligatorios: Placa y Estado.', 'error')
+            drivers = User.query.filter_by(role='chofer').all()
+            dispatchers = User.query.filter_by(role='despachador').all()
+            return render_template('admin_truck_form.html', drivers=drivers, dispatchers=dispatchers, truck=None)
+
         truck = Truck(plate=plate, status=status, cargo=cargo,
                       dispatcher_id=int(dispatcher_id) if dispatcher_id else None,
                       driver_id=int(driver_id) if driver_id else None)
         db.session.add(truck)
         db.session.commit()
+        flash('Camión creado correctamente.', 'success')
         return redirect(url_for('admin_trucks'))
 
     drivers = User.query.filter_by(role='chofer').all()
@@ -541,14 +550,26 @@ def admin_truck_edit(truck_id):
         return "No autorizado", 403
     truck = Truck.query.get_or_404(truck_id)
     if request.method == 'POST':
-        truck.plate = request.form.get('plate')
-        truck.status = request.form.get('status')
-        truck.cargo = request.form.get('cargo')
+        plate = request.form.get('plate')
+        status = request.form.get('status')
+        cargo = request.form.get('cargo')
         dispatcher_id = request.form.get('dispatcher_id') or None
         driver_id = request.form.get('driver_id') or None
+
+        # Validación
+        if not plate or not status:
+            flash('Por favor, completa los campos obligatorios: Placa y Estado.', 'error')
+            drivers = User.query.filter_by(role='chofer').all()
+            dispatchers = User.query.filter_by(role='despachador').all()
+            return render_template('admin_truck_form.html', drivers=drivers, dispatchers=dispatchers, truck=truck)
+
+        truck.plate = plate
+        truck.status = status
+        truck.cargo = cargo
         truck.dispatcher_id = int(dispatcher_id) if dispatcher_id else None
         truck.driver_id = int(driver_id) if driver_id else None
         db.session.commit()
+        flash('Camión actualizado correctamente.', 'success')
         return redirect(url_for('admin_trucks'))
 
     drivers = User.query.filter_by(role='chofer').all()
@@ -582,20 +603,30 @@ def admin_routes():
 def admin_route_new():
     if current_user.role != 'admin':
         return "No autorizado", 403
+        
+    trucks = Truck.query.all()
+    
     if request.method == 'POST':
         origin = request.form.get('origin')
         destination = request.form.get('destination')
         status = request.form.get('status')
-        truck_id = request.form.get('truck_id') or None
+        truck_id = request.form.get('truck_id') or None 
+
+        # 2. VALIDACIÓN DE CAMPOS OBLIGATORIOS
+        if not origin or not destination or not status:
+            # Si falta algún campo obligatorio, mostrar un mensaje de error y volver al formulario
+            flash('Por favor, rellena todos los campos obligatorios (Origen, Destino, Estado).', 'error')
+            return render_template('admin_route_form.html', trucks=trucks, route=None, 
+                                   origin=origin, destination=destination, status=status) 
+
         route = Route(origin=origin, destination=destination, status=status,
                       truck_id=int(truck_id) if truck_id else None)
         db.session.add(route)
         db.session.commit()
+        flash('Ruta creada exitosamente.', 'success')
         return redirect(url_for('admin_routes'))
 
-    trucks = Truck.query.all()
     return render_template('admin_route_form.html', trucks=trucks, route=None)
-
 
 @app.route('/admin/routes/edit/<int:route_id>', methods=['GET', 'POST'])
 @login_required

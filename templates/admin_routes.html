@@ -7,12 +7,17 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 text-gray-900">
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
   <div class="max-w-6xl mx-auto p-6">
-    <!-- Botón volver -->
+    <div class="flex gap-3 mb-4">
+      <button onclick="document.documentElement.classList.toggle('dark')"
+        class="px-3 py-2 rounded bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm">
+        🌓 Cambiar tema
+      </button>
+    </div>
     <div class="mb-4">
       <a href="{{ url_for('dashboard_admin') }}"
-        class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg shadow">
+        class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg shadow">
         <!-- Icono flecha -->
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
@@ -27,11 +32,11 @@
         class="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded">Nueva ruta</a>
     </div>
 
-    <div class="bg-white p-4 rounded shadow">
+    <div class="bg-white dark:bg-slate-800 p-4 rounded shadow overflow-x-auto">
       <table class="w-full text-left">
         <thead>
-          <tr>
-            <th>Origen</th>
+          <tr class="border-b dark:border-gray-700">
+            <th class="pb-2 dark:text-white">Origen</th>
             <th>Destino</th>
             <th>Estado</th>
             <th>Camión</th>
@@ -40,15 +45,16 @@
         </thead>
         <tbody>
           {% for r in routes %}
-          <tr class="border-t">
+          <tr class="border-t dark:border-gray-700">
             <td>{{ r.origin }}</td>
             <td>{{ r.destination }}</td>
             <td>{{ r.status }}</td>
             <td>{{ r.truck.plate if r.truck else '—' }}</td>
             <td>
-              <a href="{{ url_for('admin_route_edit', route_id=r.id) }}" class="text-blue-600 mr-2">Editar</a>
+              <a href="{{ url_for('admin_route_edit', route_id=r.id) }}"
+                class="text-blue-600 dark:text-blue-400 mr-2">Editar</a>
               <form action="{{ url_for('admin_route_delete', route_id=r.id) }}" method="post" style="display:inline">
-                <button type="submit" class="text-red-600">Borrar</button>
+                <button type="submit" class="text-red-600 dark:text-red-400">Borrar</button>
               </form>
             </td>
           </tr>
@@ -57,6 +63,12 @@
       </table>
     </div>
   </div>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
 </body>
 
 </html>
