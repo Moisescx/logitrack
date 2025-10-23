@@ -49,7 +49,9 @@
     {% if assigned_routes %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
       {% for route in assigned_routes %}
-      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow flex flex-col justify-between">
+      <div id="route-card-{{ route.id }}"
+        class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow flex flex-col justify-between" {% if
+        route.status=='en_progreso' %}style="display:none;" {% endif %}>
         <div>
           <p><strong>Origen:</strong> {{ route.origin }}</p>
           <p><strong>Destino:</strong> {{ route.destination }}</p>
@@ -66,11 +68,23 @@
 
         <div class="mt-4">
           {% if route.status == "pendiente" %}
-          <a href="{{ url_for('update_route_status', route_id=route.id, status='en_progreso') }}"
-            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Iniciar</a>
+          <div class="flex items-center gap-2">
+            <button data-route-id="{{ route.id }}"
+              class="start-btn px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm"
+              id="start-btn-{{ route.id }}">Iniciar</button>
+            <span id="countdown-{{ route.id }}" class="ml-2 text-sm text-gray-700"></span>
+          </div>
           {% elif route.status == "en_progreso" %}
-          <a href="{{ url_for('update_route_status', route_id=route.id, status='completada') }}"
-            class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg">Finalizar</a>
+          <div class="flex items-center gap-2">
+            <button data-route-id="{{ route.id }}"
+              data-start-time="{{ route.start_time.isoformat() if route.start_time else '' }}"
+              class="finalize-btn px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm"
+              id="finalize-btn-{{ route.id }}">Finalizar</button>
+            <button data-route-id="{{ route.id }}"
+              class="emergency-btn px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
+              id="emergency-btn-{{ route.id }}">Emergencia</button>
+            <span id="countdown-{{ route.id }}" class="ml-2 text-sm text-gray-700"></span>
+          </div>
           {% endif %}
         </div>
       </div>
@@ -92,6 +106,175 @@
       tailwind.config = {
         darkMode: 'class'
       }
+    </script>
+
+    <script>
+      // Simple, consistent trip timing logic:
+      // - Pre-start is 5s (handled when pressing Iniciar)
+      // - Trip duration is exactly 10s effective time (countdown 10 -> 0)
+      // - Emergency pauses/resumes the countdown (pausing stops the decrement)
+      // - Finalizar only allowed when remaining reaches 0
+
+      const preStartIntervals = {};
+      const tripIntervals = {};
+      const tripPaused = {};
+      const tripRemaining = {};
+
+      function startTrip(routeId) {
+        const seconds = 5; // pre-start fixed
+        const countdown = document.getElementById('countdown-' + routeId);
+        const startBtn = document.getElementById('start-btn-' + routeId);
+        if (startBtn) startBtn.disabled = true;
+
+        let remaining = seconds;
+        countdown.textContent = remaining + 's...';
+        preStartIntervals[routeId] = setInterval(() => {
+          remaining -= 1;
+          if (remaining <= 0) {
+            clearInterval(preStartIntervals[routeId]);
+            countdown.textContent = 'Iniciando...';
+            try { sessionStorage.setItem('visible_in_progress', routeId); } catch (e) { }
+            // Redirect to server endpoint to mark en_progreso (server will set start_time)
+            const urlTemplate = "{{ url_for('update_route_status', route_id=0, status='en_progreso') }}";
+            const url = urlTemplate.replace('/0/', '/' + routeId + '/');
+            window.location.href = url;
+          } else {
+            countdown.textContent = remaining + 's...';
+          }
+        }, 1000);
+      }
+
+      function finalizeTrip(routeId) {
+        // Only allow finalize when remaining reached 0
+        if (!(typeof tripRemaining[routeId] !== 'undefined' && tripRemaining[routeId] <= 0)) return;
+        try { sessionStorage.removeItem('visible_in_progress'); } catch (e) { }
+        const urlTemplate = "{{ url_for('update_route_status', route_id=0, status='completada') }}";
+        const url = urlTemplate.replace('/0/', '/' + routeId + '/');
+        window.location.href = url;
+      }
+
+      function toggleEmergency(routeId) {
+        const btn = document.getElementById('emergency-btn-' + routeId);
+        if (!tripPaused[routeId]) {
+          tripPaused[routeId] = true;
+          if (tripIntervals[routeId]) {
+            clearInterval(tripIntervals[routeId]);
+            tripIntervals[routeId] = null;
+          }
+          btn.textContent = 'Reanudar';
+          btn.classList.remove('bg-red-600');
+          btn.classList.add('bg-yellow-500');
+        } else {
+          tripPaused[routeId] = false;
+          startTripCountdown(routeId);
+          btn.textContent = 'Emergencia';
+          btn.classList.remove('bg-yellow-500');
+          btn.classList.add('bg-red-600');
+        }
+      }
+
+      function startTripCountdown(routeId) {
+        const countdown = document.getElementById('countdown-' + routeId);
+        if (typeof tripRemaining[routeId] === 'undefined') tripRemaining[routeId] = 10;
+        // If already at 0, ensure finalize enabled and no interval
+        if (tripRemaining[routeId] <= 0) {
+          const finalizeBtn = document.getElementById('finalize-btn-' + routeId);
+          if (finalizeBtn) { finalizeBtn.disabled = false; finalizeBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+          if (countdown) countdown.textContent = 'Tiempo restante: 0s';
+          return;
+        }
+
+        // display initial
+        if (countdown) countdown.textContent = 'Tiempo restante: ' + tripRemaining[routeId] + 's';
+
+        // start interval
+        if (tripIntervals[routeId]) clearInterval(tripIntervals[routeId]);
+        tripIntervals[routeId] = setInterval(() => {
+          if (tripPaused[routeId]) return;
+          tripRemaining[routeId] = Math.max(0, tripRemaining[routeId] - 1);
+          if (countdown) countdown.textContent = 'Tiempo restante: ' + tripRemaining[routeId] + 's';
+          if (tripRemaining[routeId] <= 0) {
+            clearInterval(tripIntervals[routeId]);
+            tripIntervals[routeId] = null;
+            const finalizeBtn = document.getElementById('finalize-btn-' + routeId);
+            if (finalizeBtn) { finalizeBtn.disabled = false; finalizeBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+          }
+        }, 1000);
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        // Initialize in-progress routes: compute remaining from data-start-time
+        document.querySelectorAll('.finalize-btn').forEach(btn => {
+          const id = btn.getAttribute('data-route-id');
+          tripPaused[id] = false;
+          const startIso = btn.getAttribute('data-start-time');
+
+          if (startIso) {
+            let isoToParse = startIso;
+            const hasTimezone = isoToParse.endsWith('Z') || isoToParse.includes('+') || isoToParse.substring(10).includes('-');
+
+            if (!hasTimezone) {
+              isoToParse += 'Z';
+            }
+            const startMs = Date.parse(isoToParse);
+            if (!isNaN(startMs)) {
+              // use float elapsed and ceil to avoid fractional display (e.g. 10.8)
+              const elapsedFloat = (Date.now() - startMs) / 1000;
+              tripRemaining[id] = Math.max(0, Math.ceil(10 - elapsedFloat));
+            } else {
+              tripRemaining[id] = 10;
+            }
+          } else {
+            // If no start_time, default to full 10s
+            tripRemaining[id] = 10;
+          }
+
+          // disable finalize until remaining==0
+          if (tripRemaining[id] > 0) {
+            btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed');
+          } else {
+            btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed');
+          }
+
+          // start countdown display/logic for this route
+          startTripCountdown(id);
+        });
+
+        // Wire start buttons (pre-start)
+        document.querySelectorAll('.start-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = btn.getAttribute('data-route-id');
+            btn.disabled = true; // prevent double click
+            try { sessionStorage.setItem('visible_in_progress', id); } catch (e) { }
+            startTrip(id);
+          });
+        });
+
+        // Wire finalize buttons
+        document.querySelectorAll('.finalize-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = btn.getAttribute('data-route-id');
+            finalizeTrip(id);
+          });
+        });
+
+        // Wire emergency buttons
+        document.querySelectorAll('.emergency-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = btn.getAttribute('data-route-id');
+            toggleEmergency(id);
+          });
+        });
+
+        // If session stored visible_in_progress, try to unhide that card (so the driver sees the route they started this session)
+        try {
+          const visibleId = sessionStorage.getItem('visible_in_progress');
+          if (visibleId) {
+            const card = document.getElementById('route-card-' + visibleId);
+            if (card) card.style.display = '';
+          }
+        } catch (e) { }
+      });
     </script>
 
   </div>

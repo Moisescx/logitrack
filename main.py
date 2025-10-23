@@ -8,6 +8,7 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from collections import Counter
+from datetime import datetime
 
 
 
@@ -54,6 +55,7 @@ class Route(db.Model):
     destination = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), nullable=False, default="pendiente")
     truck_id = db.Column(db.Integer, db.ForeignKey('truck.id'))
+    start_time = db.Column(db.DateTime, nullable=True)
     
     truck = db.relationship('Truck', backref='routes')
 
@@ -114,6 +116,7 @@ def dashboard_chofer():
     truck = Truck.query.filter_by(driver_id=current_user.id).first()
 
     # Rutas asignadas al chofer
+    # Rutas asignadas al chofer (incluye en_progreso). Template JS ocultará en_progreso por defecto
     assigned_routes = Route.query.filter_by(truck_id=truck.id).all() if truck else []
 
     return render_template(
@@ -141,17 +144,20 @@ def update_route_status(route_id, status):
 
             route.truck_id = truck.id
             route.status = "en_progreso"
+            route.start_time = datetime.utcnow()
         else:
             # Si la ruta ya está asignada, validar que corresponda al chofer y permitir cambiar a en_progreso
             if not route.truck or route.truck.driver_id != current_user.id:
                 return "No autorizado", 403
             route.status = "en_progreso"
+            route.start_time = datetime.utcnow()
 
     elif status == "completada":
         # Solo el chofer asignado puede marcarla como completada
         if not route.truck or route.truck.driver_id != current_user.id:
             return "No autorizado", 403
         route.status = "completada"
+        route.start_time = None
 
     else:
         return "Estado no soportado", 400
