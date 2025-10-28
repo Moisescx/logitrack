@@ -1,0 +1,32 @@
+rol,orden_paso,accion,endpoint_o_plantilla,notas
+chofer,1,Iniciar sesión,/login,El usuario debe tener rol 'chofer'
+chofer,2,Abrir panel,/dashboard_chofer,Muestra camión y rutas asignadas
+chofer,3,Ver rutas,-,Por defecto muestra solo 'pendiente' y 'completada'; 'en_progreso' está oculto
+chofer,4,Iniciar pre-start (5s),Cliente 5s,startTrip(routeId) -> luego GET /update_route_status/<id>/en_progreso,sessionStorage guarda visible_in_progress
+chofer,5,La ruta pasa a en_progreso,GET /update_route_status/<id>/en_progreso,Servidor setea status y start_time
+chofer,6,Mostrar tarjeta en progreso (solo sesión),Cliente muestra tarjeta si sessionStorage.visible_in_progress==id,Otras sesiones no la verán
+chofer,7,Cuenta regresiva del viaje (10s),Cliente countdown 10->0,Se puede pausar con 'Emergencia'
+chofer,8,Pausar/Reanudar emergencia,Cliente toggleEmergency(routeId),Pausa la cuenta regresiva (no cambia start_time en servidor)
+chofer,9,Habilitar Finalizar,Cliente cuando countdown==0,Botón Finalizar habilitado
+chofer,10,Finalizar ruta,GET /update_route_status/<id>/completada,Servidor marca 'completada' y limpia start_time
+chofer,11,Vista mapa,/mapa y /mapa_data,Muestra marcadores para las rutas del chofer
+
+despachador,1,Iniciar sesión,/login,Usuario rol 'despachador'
+despachador,2,Abrir panel,/dashboard_despachador,Muestra camiones de la flota y rutas disponibles
+despachador,3,Asignar ruta a camión,/asignar_chofer/<route_id> -> /asignar_chofer_confirm/<route_id>/<truck_id>,Solo camiones con dispatcher_id == current_user.id
+despachador,4,Vista mapa de flota,/mapa_despachador y /mapa_despachador_data,Marcadores para todas las rutas de los camiones del despachador
+
+admin,1,Iniciar sesión,/login,Usuario rol 'admin'
+admin,2,Abrir panel admin,/dashboard_admin,KPIs y elementos recientes
+admin,3,CRUD Camiones,/admin/trucks y formularios,Crear/editar/eliminar camiones
+admin,4,CRUD Rutas,/admin/routes y formularios,Crear/editar/eliminar rutas
+
+modelo,1,User campos,-,id, username, role, password (hasheada)
+modelo,2,Truck campos,-,id, plate, status, cargo, driver_id, dispatcher_id
+modelo,3,Route campos,-,id, origin, destination, status, truck_id, start_time
+modelo,4,Tracking campos,-,id, route_id, location, timestamp
+
+pruebas,1,Prueba flujo chofer,-,Login -> dashboard -> iniciar -> esperar 5s -> en_progreso -> countdown 10s -> emergencia pause/resume -> finalizar
+notas,1,Manejo de sesión,-,sessionStorage.visible_in_progress muestra la tarjeta en progreso sólo para la sesión que inició el viaje
+notas,2,Manejo de tiempos,-,Servidor escribe start_time; cliente calcula remaining = ceil(10 - elapsedSeconds) para mostrar segundos enteros
+seguridad,1,Validaciones,-,Endpoints validan current_user.role y ownership donde aplica

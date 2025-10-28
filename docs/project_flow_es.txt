@@ -1,0 +1,62 @@
+Resumen
+- Aplicación Flask + SQLAlchemy para gestionar camiones y rutas de reparto.
+- Roles principales: chofer (conductor), despachador, administrador.
+- Modelos clave: User, Truck, Route, Tracking.
+
+Chofer — flujo normal
+1) Iniciar sesión (/login) — debe ser rol 'chofer'.
+2) Panel (/dashboard_chofer) — muestra camión asignado y rutas.
+   - Por defecto el chofer ve solo rutas 'pendiente' y 'completada'. Las rutas 'en_progreso' están ocultas.
+3) Iniciar viaje:
+   - UI: pulsar "Iniciar" en una ruta pendiente.
+   - Cliente: cuenta atrás previa fija de 5 segundos.
+   - Cliente guarda sessionStorage.visible_in_progress = <routeId> para que esa sesión muestre la tarjeta en_progreso.
+   - Tras 5s el cliente solicita: GET /update_route_status/<id>/en_progreso
+   - Servidor: marca route.status='en_progreso' y setea route.start_time (UTC).
+4) Durante el viaje:
+   - Cliente muestra cuenta regresiva 10 → 0 (duración efectiva 10s).
+   - Botón "Emergencia" pausa y reanuda la cuenta (pausa el decremento en cliente).
+   - Botón "Finalizar" está deshabilitado hasta que la cuenta llega a 0.
+5) Finalizar:
+   - Pulsar "Finalizar" → GET /update_route_status/<id>/completada
+   - Servidor marca 'completada' y limpia start_time.
+6) Mapa: /mapa y /mapa_data muestran marcadores simulados para las rutas del chofer.
+
+Despachador — flujo normal
+1) Iniciar sesión (/login) — rol 'despachador'.
+2) Panel (/dashboard_despachador) — lista camiones del despachador y rutas.
+3) Asignar ruta a camión: /asignar_chofer/<route_id> → confirmar con /asignar_chofer_confirm/<route_id>/<truck_id>.
+4) Mapa de flota: /mapa_despachador y /mapa_despachador_data muestran marcadores para los camiones del despachador.
+
+Administrador — flujo normal
+1) Iniciar sesión (/login) — rol 'admin'.
+2) Panel admin (/dashboard_admin) — KPIs y elementos recientes.
+3) CRUD de camiones y rutas: /admin/trucks y /admin/routes, formularios de creación/edición.
+
+Modelos (campos relevantes)
+- User: id, username, role, password (hashed).
+- Truck: id, plate, status, cargo, driver_id, dispatcher_id.
+- Route: id, origin, destination, status (pendiente/en_progreso/completada), truck_id, start_time.
+- Tracking: id, route_id, location, timestamp.
+
+Endpoints importantes (resumen)
+- GET /dashboard_chofer
+- GET /update_route_status/<route_id>/en_progreso
+- GET /update_route_status/<route_id>/completada
+- GET /mapa, /mapa_data
+- GET /dashboard_despachador, /asignar_chofer/<route_id>, /asignar_chofer_confirm/<route_id>/<truck_id>
+- GET /dashboard_admin, /admin/trucks, /admin/routes (y sus formularios)
+
+Checklist de pruebas (copiable)
+- [ ] Login como chofer con camión asignado.
+- [ ] Ver que el dashboard muestra solo 'pendiente' y 'completada'.
+- [ ] Pulsar "Iniciar" en una ruta pendiente → 5s pre-start.
+- [ ] Tras recarga, la sesión muestra la tarjeta en_progreso (solo en esa sesión).
+- [ ] Confirmar cuenta regresiva 10 → 0 (enteros).
+- [ ] Presionar "Emergencia" para pausar y reanudar.
+- [ ] Cuando llegue a 0, pulsar "Finalizar" → ruta 'completada'.
+
+Notas
+- sessionStorage.visible_in_progress se usa para mostrar la tarjeta en_progreso únicamente en la sesión que la inició.
+- El servidor escribe start_time (UTC) cuando una ruta pasa a en_progreso; el cliente calcula tripRemaining con ceil(10 - elapsed) para mostrar segundos enteros.
+- Las rutas están protegidas por @login_required y cada endpoint valida role y ownership cuando aplica.
