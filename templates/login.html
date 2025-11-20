@@ -18,6 +18,8 @@
 
         <!-- Formulario -->
         <form method="POST" class="space-y-6">
+            <!-- CSRF token for Flask-WTF CSRFProtect -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <!-- Usuario -->
             <div class="relative">
                 <input type="text" name="username" required placeholder="Usuario"

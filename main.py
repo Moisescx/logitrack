@@ -9,11 +9,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from collections import Counter
 from datetime import datetime
+import os
+from flask_wtf import CSRFProtect
+from flask_wtf.csrf import generate_csrf
 
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'mmarinliventuslab2004'  # contraseña secreta para sesiones
+# Use an environment variable for secret key in production. Fallback to a dev key.
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me')
 
 
 # Configuración de la base de datos SQLite
@@ -21,6 +25,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# Inicializar CSRF Protection (para formularios y llamadas AJAX)
+csrf = CSRFProtect()
+csrf.init_app(app)
 
 # LOGIN MANAGER
 # ========================
@@ -67,16 +75,25 @@ class Tracking(db.Model):
 
 # ======== INICIALIZAR DB ========
 if __name__ == '__main__':
-    #with app.app_context():#
-        #db.create_all()#
-    #print("Base de datos creada.")#
-    
-    hashed_password = generate_password_hash("contraseña123", method="pbkdf2:sha256")
+    # Use this block to create DB or run the app in development.
+    # with app.app_context():
+    #     db.create_all()
+    pass
 
     
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+@app.context_processor
+def inject_csrf_token():
+    # expose a CSRF token in templates (useful for AJAX fetch requests)
+    try:
+        token = generate_csrf()
+    except Exception:
+        token = ""
+    return dict(csrf_token=token)
 
 @app.route("/")
 def home():
@@ -125,7 +142,7 @@ def dashboard_chofer():
         assigned_routes=assigned_routes
     )
 
-@app.route("/update_route_status/<int:route_id>/<status>")
+@app.route("/update_route_status/<int:route_id>/<status>", methods=["POST"])
 @login_required
 def update_route_status(route_id, status):
     if current_user.role != "chofer":
@@ -165,7 +182,7 @@ def update_route_status(route_id, status):
     db.session.commit()
     return redirect(url_for("dashboard_chofer"))
 
-@app.route("/asignar_ruta/<int:route_id>")
+@app.route("/asignar_ruta/<int:route_id>", methods=["POST"])
 @login_required
 def asignar_ruta(route_id):
     if current_user.role != "chofer":
@@ -231,7 +248,7 @@ def asignar_chofer(route_id):
     return render_template('select_truck.html', route=route, trucks=trucks)
 
 
-@app.route('/asignar_chofer_confirm/<int:route_id>/<int:truck_id>')
+@app.route('/asignar_chofer_confirm/<int:route_id>/<int:truck_id>', methods=['POST'])
 @login_required
 def asignar_chofer_confirm(route_id, truck_id):
     """Ejecuta la asignación de una ruta a un camión seleccionado por el despachador."""

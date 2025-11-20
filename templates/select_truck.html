@@ -28,8 +28,10 @@
         <p><strong>Estado:</strong> {{ truck.status }}</p>
         <p><strong>Carga:</strong> {{ truck.cargo or 'Desconocida' }}</p>
         <div class="mt-4">
-          <a href="{{ url_for('asignar_chofer_confirm', route_id=route.id, truck_id=truck.id) }}"
-            class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg">Asignar a este camión</a>
+          <form method="POST" action="{{ url_for('asignar_chofer_confirm', route_id=route.id, truck_id=truck.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg">Asignar a este camión</button>
+          </form>
         </div>
       </div>
       {% endfor %}

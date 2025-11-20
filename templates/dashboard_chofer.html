@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Panel Chofer</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -130,14 +131,33 @@
         countdown.textContent = remaining + 's...';
         preStartIntervals[routeId] = setInterval(() => {
           remaining -= 1;
-          if (remaining <= 0) {
+            if (remaining <= 0) {
             clearInterval(preStartIntervals[routeId]);
             countdown.textContent = 'Iniciando...';
             try { sessionStorage.setItem('visible_in_progress', routeId); } catch (e) { }
-            // Redirect to server endpoint to mark en_progreso (server will set start_time)
+            // POST to server endpoint to mark en_progreso (server will set start_time)
             const urlTemplate = "{{ url_for('update_route_status', route_id=0, status='en_progreso') }}";
             const url = urlTemplate.replace('/0/', '/' + routeId + '/');
-            window.location.href = url;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+              },
+              body: JSON.stringify({})
+            }).then(resp => {
+              if (resp.ok) {
+                // refresh to show en_progreso state and server-set start_time
+                window.location.reload();
+              } else {
+                countdown.textContent = 'Error al iniciar';
+                if (startBtn) startBtn.disabled = false;
+              }
+            }).catch(err => {
+              countdown.textContent = 'Error de red';
+              if (startBtn) startBtn.disabled = false;
+            });
           } else {
             countdown.textContent = remaining + 's...';
           }
@@ -150,7 +170,21 @@
         try { sessionStorage.removeItem('visible_in_progress'); } catch (e) { }
         const urlTemplate = "{{ url_for('update_route_status', route_id=0, status='completada') }}";
         const url = urlTemplate.replace('/0/', '/' + routeId + '/');
-        window.location.href = url;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({})
+        }).then(resp => {
+          if (resp.ok) {
+            window.location.reload();
+          } else {
+            console.error('Finalize failed', resp.status);
+          }
+        }).catch(err => console.error(err));
       }
 
       function toggleEmergency(routeId) {
