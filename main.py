@@ -323,7 +323,8 @@ def mapa_data():
         camiones.append({
             "plate": truck.plate,
             "status": ruta.status,
-            "coords": point
+            "coords": point,
+            "route_id": ruta.id
         })
 
     return jsonify(camiones)
