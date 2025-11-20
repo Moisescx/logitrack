@@ -39,6 +39,7 @@
       {% endwith %}
 
       <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="mb-3">
           <label class="block text-sm font-medium dark:text-white">Origen</label>
           <input name="origin" value="{{ request.form.origin if request.method=='POST' else (route.origin if route else '') }}"

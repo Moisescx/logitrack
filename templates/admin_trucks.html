@@ -15,6 +15,15 @@
         🌓 Cambiar tema
       </button>
     </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4 max-w-3xl mx-auto">
+          {% for category, msg in messages %}
+            <div class="px-3 py-2 rounded mb-2 {{ 'bg-red-100 text-red-800' if category=='error' else 'bg-green-100 text-green-800' }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
     <div class="mb-4">
       <a href="{{ url_for('dashboard_admin') }}"
         class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg shadow">
@@ -57,6 +66,7 @@
               <a href="{{ url_for('admin_truck_edit', truck_id=t.id) }}"
                 class="text-blue-600 dark:text-blue-400 mr-2">Editar</a>
               <form action="{{ url_for('admin_truck_delete', truck_id=t.id) }}" method="post" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button type="submit" class="text-red-600 dark:text-red-400">Borrar</button>
               </form>
             </td>

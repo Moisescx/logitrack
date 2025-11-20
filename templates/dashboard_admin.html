@@ -23,6 +23,16 @@
       </div>
     </div>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4 max-w-3xl mx-auto">
+          {% for category, msg in messages %}
+            <div class="px-3 py-2 rounded mb-2 {{ 'bg-red-100 text-red-800' if category=='error' else 'bg-green-100 text-green-800' }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
