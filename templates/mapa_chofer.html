@@ -9,26 +9,21 @@
     <div id="map" style="height: 600px;"></div>
 
     <script>
-        // Crear mapa centrado en Chile
         var map = L.map('map').setView([-33.4489, -70.6693], 6);
 
-        // Cargar tiles (mapa base)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
         }).addTo(map);
 
-        // Traer los camiones desde Flask
         fetch("/mapa_data")
             .then(res => res.json())
             .then(data => {
-                // Only show 'en_progreso' markers if this session started that route
                 let visibleInProgress = null;
                 try { visibleInProgress = sessionStorage.getItem('visible_in_progress'); } catch (e) { visibleInProgress = null; }
 
                 data.forEach(c => {
                     const status = (c.status || '').toLowerCase();
                     if (status === 'en_progreso' || status === 'en ruta' || status === 'en curso') {
-                        // if this session didn't start it, skip marker
                         if (!visibleInProgress || String(c.route_id) !== String(visibleInProgress)) {
                             return;
                         }
