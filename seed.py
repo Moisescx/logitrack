@@ -7,7 +7,7 @@ fake = Faker()
 
 with app.app_context():
     # ========================
-    # RECREAR BASE DE DATOS (aplica cambios de esquema)
+    # RECREAR BASE DE DATOS
     # ========================
     db.drop_all()
     db.create_all()
@@ -44,7 +44,7 @@ with app.app_context():
     # CREAR CAMIONES
     # ========================
     trucks = []
-    # asignar camiones a choferes y también a un despachador en ciclo
+    
     for idx, chofer in enumerate(choferes):
         dispatcher = despachadores[idx % len(despachadores)]
         truck = Truck(
@@ -59,16 +59,12 @@ with app.app_context():
 
     db.session.commit()
 
-    # Asegurar que cada despachador controle (aprox.) 3 choferes: comunicar en console
-    # (la asignación ya se hizo al crear los trucks con dispatcher)
-
     # ========================
     # CREAR RUTAS
     # ========================
     ciudades = ["Santiago", "Valparaíso", "Concepción", "Antofagasta", "La Serena", 
                 "Rancagua", "Temuco", "Puerto Montt", "Valdivia", "Arica"]
 
-    # Crear algunas rutas asignadas y otras disponibles (sin camión)
     for i in range(20):  # 20 rutas asignadas a camiones
         origin = random.choice(ciudades)
         destination = random.choice([c for c in ciudades if c != origin])

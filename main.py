@@ -16,17 +16,14 @@ from flask_wtf.csrf import generate_csrf
 
 
 app = Flask(__name__)
-# Use an environment variable for secret key in production. Fallback to a dev key.
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me')
 
 
-# Configuración de la base de datos SQLite
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Inicializar CSRF Protection (para formularios y llamadas AJAX)
 csrf = CSRFProtect()
 csrf.init_app(app)
 
@@ -75,7 +72,6 @@ class Tracking(db.Model):
 
 # ======== INICIALIZAR DB ========
 if __name__ == '__main__':
-    # Use this block to create DB or run the app in development.
     # with app.app_context():
     #     db.create_all()
     pass
@@ -88,7 +84,6 @@ def load_user(user_id):
 
 @app.context_processor
 def inject_csrf_token():
-    # expose a CSRF token in templates (useful for AJAX fetch requests)
     try:
         token = generate_csrf()
     except Exception:
@@ -132,8 +127,6 @@ def dashboard_chofer():
 
     truck = Truck.query.filter_by(driver_id=current_user.id).first()
 
-    # Rutas asignadas al chofer
-    # Rutas asignadas al chofer (incluye en_progreso). Template JS ocultará en_progreso por defecto
     assigned_routes = Route.query.filter_by(truck_id=truck.id).all() if truck else []
 
     return render_template(
@@ -242,7 +235,6 @@ def asignar_chofer(route_id):
     if route.status != 'pendiente' or route.truck_id is not None:
         return "Ruta no disponible", 400
 
-    # Camiones del despachador (incluye ocupados/disponibles para mostrar carga y chofer)
     trucks = Truck.query.filter_by(dispatcher_id=current_user.id).all()
 
     return render_template('select_truck.html', route=route, trucks=trucks)
@@ -299,10 +291,8 @@ def mapa_data():
     }
 
     for ruta in rutas:
-        # Normalizar varios nombres de estado posibles
         status = (ruta.status or '').lower()
         if status in ["pendiente", "en_progreso", "en curso", "en ruta"]:
-            # punto cerca del origen (simula inicio / en progreso)
             ciudad = ruta.origin
             coords = ciudades_coords.get(ciudad)
             if coords:
@@ -407,32 +397,26 @@ def dashboard_admin():
     if current_user.role != 'admin':
         return "No autorizado", 403
 
-    # KPIs básicos
     total_trucks = Truck.query.count()
     total_drivers = User.query.filter_by(role='chofer').count()
     total_dispatchers = User.query.filter_by(role='despachador').count()
     total_routes = Route.query.count()
 
-    # Camiones recientes (los que ya tenías)
     recent_trucks = Truck.query.order_by(Truck.id.desc()).limit(5).all()
-    # Rutas recientes
     recent_routes = Route.query.order_by(Route.id.desc()).limit(5).all()
 
-    # 📊 Extra: Distribución de camiones por estado
     truck_status_counts = (
         db.session.query(Truck.status, db.func.count(Truck.id))
         .group_by(Truck.status).all()
     )
     truck_status_data = {status: count for status, count in truck_status_counts}
 
-    # 📊 Extra: Distribución de rutas por estado
     route_status_counts = (
         db.session.query(Route.status, db.func.count(Route.id))
         .group_by(Route.status).all()
     )
     route_status_data = {status: count for status, count in route_status_counts}
 
-    # 📜 Extra: timeline combinado (camiones + rutas)
     recent_activity = []
     for t in recent_trucks:
         recent_activity.append({
@@ -445,7 +429,6 @@ def dashboard_admin():
             txt += f" asignada al camión {r.truck.plate}"
         recent_activity.append({"type": "ruta", "desc": txt})
 
-    # Dejar máximo 6 actividades
     recent_activity = recent_activity[:6]
 
     return render_template(
