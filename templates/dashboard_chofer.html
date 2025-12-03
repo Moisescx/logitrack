@@ -23,6 +23,7 @@
       </div>
     </div>
 
+    <!-- Info del camión -->
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow text-center">
@@ -44,6 +45,7 @@
     </div>
 
 
+    <!-- Rutas Asignadas -->
     <h3 class="text-xl font-semibold mb-3">📋 Tus rutas programadas</h3>
     {% if assigned_routes %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
@@ -108,13 +110,19 @@
     </script>
 
     <script>
+      // Simple, consistent trip timing logic:
+      // - Pre-start is 5s (handled when pressing Iniciar)
+      // - Trip duration is exactly 10s effective time (countdown 10 -> 0)
+      // - Emergency pauses/resumes the countdown (pausing stops the decrement)
+      // - Finalizar only allowed when remaining reaches 0
+
       const preStartIntervals = {};
       const tripIntervals = {};
       const tripPaused = {};
       const tripRemaining = {};
 
       function startTrip(routeId) {
-        const seconds = 5; 
+        const seconds = 5; // pre-start fixed
         const countdown = document.getElementById('countdown-' + routeId);
         const startBtn = document.getElementById('start-btn-' + routeId);
         if (startBtn) startBtn.disabled = true;
@@ -123,10 +131,11 @@
         countdown.textContent = remaining + 's...';
         preStartIntervals[routeId] = setInterval(() => {
           remaining -= 1;
-          if (remaining <= 0) {
+            if (remaining <= 0) {
             clearInterval(preStartIntervals[routeId]);
             countdown.textContent = 'Iniciando...';
             try { sessionStorage.setItem('visible_in_progress', routeId); } catch (e) { }
+            // POST to server endpoint to mark en_progreso (server will set start_time)
             const urlTemplate = "{{ url_for('update_route_status', route_id=0, status='en_progreso') }}";
             const url = urlTemplate.replace('/0/', '/' + routeId + '/');
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -139,6 +148,7 @@
               body: JSON.stringify({})
             }).then(resp => {
               if (resp.ok) {
+                // refresh to show en_progreso state and server-set start_time
                 window.location.reload();
               } else {
                 countdown.textContent = 'Error al iniciar';
@@ -155,6 +165,7 @@
       }
 
       function finalizeTrip(routeId) {
+        // Only allow finalize when remaining reached 0
         if (!(typeof tripRemaining[routeId] !== 'undefined' && tripRemaining[routeId] <= 0)) return;
         try { sessionStorage.removeItem('visible_in_progress'); } catch (e) { }
         const urlTemplate = "{{ url_for('update_route_status', route_id=0, status='completada') }}";
@@ -199,6 +210,7 @@
       function startTripCountdown(routeId) {
         const countdown = document.getElementById('countdown-' + routeId);
         if (typeof tripRemaining[routeId] === 'undefined') tripRemaining[routeId] = 10;
+        // If already at 0, ensure finalize enabled and no interval
         if (tripRemaining[routeId] <= 0) {
           const finalizeBtn = document.getElementById('finalize-btn-' + routeId);
           if (finalizeBtn) { finalizeBtn.disabled = false; finalizeBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
@@ -206,8 +218,10 @@
           return;
         }
 
+        // display initial
         if (countdown) countdown.textContent = 'Tiempo restante: ' + tripRemaining[routeId] + 's';
 
+        // start interval
         if (tripIntervals[routeId]) clearInterval(tripIntervals[routeId]);
         tripIntervals[routeId] = setInterval(() => {
           if (tripPaused[routeId]) return;
@@ -223,6 +237,7 @@
       }
 
       window.addEventListener('DOMContentLoaded', () => {
+        // Initialize in-progress routes: compute remaining from data-start-time
         document.querySelectorAll('.finalize-btn').forEach(btn => {
           const id = btn.getAttribute('data-route-id');
           tripPaused[id] = false;
@@ -237,33 +252,39 @@
             }
             const startMs = Date.parse(isoToParse);
             if (!isNaN(startMs)) {
+              // use float elapsed and ceil to avoid fractional display (e.g. 10.8)
               const elapsedFloat = (Date.now() - startMs) / 1000;
               tripRemaining[id] = Math.max(0, Math.ceil(10 - elapsedFloat));
             } else {
               tripRemaining[id] = 10;
             }
           } else {
+            // If no start_time, default to full 10s
             tripRemaining[id] = 10;
           }
 
+          // disable finalize until remaining==0
           if (tripRemaining[id] > 0) {
             btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed');
           } else {
             btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed');
           }
 
+          // start countdown display/logic for this route
           startTripCountdown(id);
         });
 
+        // Wire start buttons (pre-start)
         document.querySelectorAll('.start-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             const id = btn.getAttribute('data-route-id');
-            btn.disabled = true; 
+            btn.disabled = true; // prevent double click
             try { sessionStorage.setItem('visible_in_progress', id); } catch (e) { }
             startTrip(id);
           });
         });
 
+        // Wire finalize buttons
         document.querySelectorAll('.finalize-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             const id = btn.getAttribute('data-route-id');
@@ -271,6 +292,7 @@
           });
         });
 
+        // Wire emergency buttons
         document.querySelectorAll('.emergency-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             const id = btn.getAttribute('data-route-id');
@@ -278,6 +300,7 @@
           });
         });
 
+        // If session stored visible_in_progress, try to unhide that card (so the driver sees the route they started this session)
         try {
           const visibleId = sessionStorage.getItem('visible_in_progress');
           if (visibleId) {
