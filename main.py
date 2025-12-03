@@ -19,7 +19,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me')
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///instance/database.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -75,12 +75,6 @@ if __name__ == '__main__':
     # with app.app_context():
     #     db.create_all()
     pass
-
-
-@app.before_first_request
-def create_tables():
-    # Ensure tables exist on first request (convenience for simple deploys)
-    db.create_all()
 
     
 @login_manager.user_loader
